@@ -56,7 +56,7 @@ app.all("/incoming-call", async (request, reply) => {
     .send(twiml);
 });
 
-app.get("/media-stream", { websocket: true }, (connection) => {
+app.get("/media-stream", { websocket: true }, (socket) => {
   let streamSid = null;
   let openAiReady = false;
   let greetingSent = false;
@@ -133,9 +133,9 @@ app.get("/media-stream", { websocket: true }, (connection) => {
       if (
         event.type === "response.output_audio.delta" &&
         streamSid &&
-        connection.socket.readyState === WebSocket.OPEN
+        socket.readyState === WebSocket.OPEN
       ) {
-        connection.socket.send(
+        socket.send(
           JSON.stringify({
             event: "media",
             streamSid,
@@ -165,7 +165,7 @@ app.get("/media-stream", { websocket: true }, (connection) => {
     app.log.error(error, "Erreur WebSocket OpenAI");
   });
 
-  connection.socket.on("message", (raw) => {
+  socket.on("message", (raw) => {
     try {
       const message = JSON.parse(raw.toString());
 
@@ -201,7 +201,7 @@ app.get("/media-stream", { websocket: true }, (connection) => {
     }
   });
 
-  connection.socket.on("close", () => {
+  socket.on("close", () => {
     app.log.info("Connexion Twilio fermée");
 
     if (openAiWs.readyState === WebSocket.OPEN) {
