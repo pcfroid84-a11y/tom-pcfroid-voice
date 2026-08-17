@@ -10,6 +10,8 @@ await app.register(websocket);
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const PORT = process.env.PORT || 3000;
+const N8N_WEBHOOK_URL =
+  "https://pcfroid84.app.n8n.cloud/webhook/tom-appel";
 
 const SYSTEM_PROMPT = `
 Tu es Tom, l'assistant téléphonique de PC Froid.
@@ -76,6 +78,8 @@ app.get("/media-stream", { websocket: true }, (socket) => {
   let streamSid = null;
   let openAiReady = false;
   let greetingSent = false;
+  let n8nContextLoaded = false;
+  let n8nContextLoading = false;
 
   const openAiWs = new WebSocket(
     "wss://api.openai.com/v1/realtime?model=gpt-realtime-2.1-mini",
@@ -91,6 +95,130 @@ app.get("/media-stream", { websocket: true }, (socket) => {
       openAiWs.send(JSON.stringify(payload));
     }
   }
+  function isUsefulCallerMessage(text) {
+  const normalized = text
+    .trim()
+    .toLowerCase()
+    .replace(/[.!?,;:]/g, "");
+
+  if (normalized.length < 8) return false;
+
+  const trivialMessages = [
+    "bonjour",
+    "allo",
+    "salut",
+    "oui",
+    "non",
+    "ok",
+    "d'accord",
+    "daccord",
+    "merci"
+  ];
+
+  return !trivialMessages.includes(normalized);
+}
+
+async function loadN8nContext(callerMessage) {
+  if (n8nContextLoaded || n8nContextLoading) return;
+  if (!isUsefulCallerMessage(callerMessage)) return;
+
+  n8nContextLoading = true;
+
+  try {
+    app.log.info(
+      { callerMessage },
+      "Envoi de la demande au cerveau n8n"
+    );
+
+    const response = await fetch(N8N_WEBHOOK_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        caller_message: callerMessage
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`n8n HTTP ${response.status}`);
+    }
+
+    const context = await response.json();
+
+    const rules = (context.essential_rules || [])
+      .map(rule => `- ${rule.instruction}`)
+      .join("\n");
+
+    const scenarios = (context.selected_scenarios || [])
+      .map(s => `
+Scénario : ${s.scenario || ""}
+Compréhension : ${s.expected_understanding || ""}
+Questions maximum : ${s.max_questions || ""}
+Action : ${s.expected_action || ""}
+Urgence : ${s.urgency_level || ""}
+`)
+      .join("\n");
+
+    const procedures = (context.selected_procedures || [])
+      .map(p => `
+Procédure : ${p.name || ""}
+Étapes autorisées : ${p.allowed_steps || ""}
+Limites de sécurité : ${p.safety_limits || ""}
+`)
+      .join("\n");
+
+    const businessContext = `
+CONTEXTE MÉTIER PC FROID POUR CET APPEL
+
+Catégorie : ${context.routing?.category || ""}
+Urgence : ${context.routing?.urgency || 0}
+Analyse : ${context.routing?.reason || ""}
+
+RÈGLES UTILES :
+${rules}
+
+SCÉNARIO :
+${scenarios}
+
+PROCÉDURE :
+${procedures}
+
+Utilise ce contexte pour la suite de l'appel.
+Ne récite pas ce contenu au client.
+Reste naturel et concis.
+`;
+
+    sendToOpenAI({
+      type: "conversation.item.create",
+      item: {
+        type: "message",
+        role: "system",
+        content: [
+          {
+            type: "input_text",
+            text: businessContext
+          }
+        ]
+      }
+    });
+
+    n8nContextLoaded = true;
+
+    app.log.info(
+      {
+        category: context.routing?.category,
+        urgency: context.routing?.urgency
+      },
+      "Contexte n8n injecté dans Tom"
+    );
+
+  } catch (error) {
+    app.log.error(error, "Erreur récupération contexte n8n");
+  } finally {
+    n8nContextLoading = false;
+  }
+}
 
   function sendGreeting() {
     if (greetingSent || !openAiReady) return;
@@ -156,6 +284,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
       { callerMessage },
       "Transcription client reçue"
     );
+    loadN8nContext(callerMessage);
   }
 }
 
