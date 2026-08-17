@@ -252,8 +252,7 @@ Reste naturel et concis.
     },
                transcription: {
       model: "gpt-4o-mini-transcribe",
-      language: "fr",
-      prompt: "PC Froid, climatisation, Mitsubishi Electric, Heiwa, Airzone, pompe à chaleur, SAV, entretien, froid commercial"
+      language: "fr"
     },
             turn_detection: {
               type: "semantic_vad",
