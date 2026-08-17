@@ -121,7 +121,12 @@ app.get("/media-stream", { websocket: true }, (socket) => {
           input: {
             format: {
               type: "audio/pcmu",
-            },
+    },
+               transcription: {
+      model: "gpt-4o-mini-transcribe",
+      language: "fr",
+      prompt: "PC Froid, climatisation, Mitsubishi Electric, Heiwa, Airzone, pompe à chaleur, SAV, entretien, froid commercial"
+    },
             turn_detection: {
               type: "semantic_vad",
             },
@@ -140,6 +145,19 @@ app.get("/media-stream", { websocket: true }, (socket) => {
   openAiWs.on("message", (raw) => {
     try {
       const event = JSON.parse(raw.toString());
+      if (
+  event.type ===
+  "conversation.item.input_audio_transcription.completed"
+) {
+  const callerMessage = event.transcript?.trim();
+
+  if (callerMessage) {
+    app.log.info(
+      { callerMessage },
+      "Transcription client reçue"
+    );
+  }
+}
 
       if (event.type === "session.updated") {
         openAiReady = true;
