@@ -258,14 +258,22 @@ Reste naturel et concis.
 
     greetingSent = true;
 
-    sendToOpenAI({
-      type: "response.create",
-      response: {
-        output_modalities: ["audio"],
-        instructions:
-          'Dis exactement : "Bonjour, PC Froid, Tom à l’appareil. Je vous écoute." Puis attends que le client parle.',
-      },
-    });
+    const greetings = [
+  "PC Froid bonjour, ici Tom. Que puis-je faire pour vous ?",
+  "PC Froid bonjour, Tom à l'appareil. Comment puis-je vous aider ?",
+  "Bonjour, PC Froid, ici Tom. Que puis-je faire pour vous ?"
+];
+
+const greeting = greetings[Math.floor(Math.random() * greetings.length)];
+
+sendToOpenAI({
+  type: "response.create",
+  response: {
+    output_modalities: ["audio"],
+    instructions:
+      `Dis exactement et uniquement cette phrase : "${greeting}" Ne dis absolument rien d'autre. Après cette phrase, arrête de parler et attends la réponse du client.`
+  },
+});
   }
 
   openAiWs.on("open", () => {
