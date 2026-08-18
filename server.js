@@ -115,19 +115,33 @@ app.get("/media-stream", { websocket: true }, (socket) => {
 
   if (normalized.length < 8) return false;
 
-  const trivialMessages = [
-    "bonjour",
-    "allo",
-    "salut",
-    "oui",
-    "non",
-    "ok",
-    "d'accord",
-    "daccord",
-    "merci"
-  ];
+ const trivialMessages = [
+  "bonjour",
+  "allo",
+  "salut",
+  "oui",
+  "non",
+  "ok",
+  "d'accord",
+  "daccord",
+  "merci",
+  "je sais pas",
+  "je ne sais pas",
+  "ça marche pas",
+  "ca marche pas",
+  "eh oui ça marche pas",
+  "eh oui ca marche pas",
+  "ça fait bip",
+  "ca fait bip",
+  "je comprends rien",
+  "je comprends rien moi"
+];
 
-  return !trivialMessages.includes(normalized);
+if (trivialMessages.includes(normalized)) return false;
+
+if (normalized.split(/\s+/).length < 4) return false;
+
+return true;
 }
 
 async function loadN8nContext(callerMessage) {
@@ -156,8 +170,13 @@ async function loadN8nContext(callerMessage) {
       throw new Error(`n8n HTTP ${response.status}`);
     }
 
-    const context = await response.json();
+    const responseText = await response.text();
 
+if (!responseText || !responseText.trim()) {
+  throw new Error("Réponse n8n vide");
+}
+
+const context = JSON.parse(responseText);
     const rules = (context.essential_rules || [])
       .map(rule => `- ${rule.instruction}`)
       .join("\n");
