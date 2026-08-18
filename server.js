@@ -92,6 +92,8 @@ app.get("/media-stream", { websocket: true }, (socket) => {
   let greetingSent = false;
   let n8nContextLoaded = false;
   let n8nContextLoading = false;
+  let callerIdentityKnown = false;
+let awaitingIdentity = false;
 
   const openAiWs = new WebSocket(
     "wss://api.openai.com/v1/realtime?model=gpt-realtime-2.1-mini",
@@ -310,6 +312,15 @@ Reste naturel et concis.
   const callerMessage = event.transcript?.trim();
 
   if (callerMessage) {
+    if (awaitingIdentity) {
+  callerIdentityKnown = true;
+  awaitingIdentity = false;
+
+  app.log.info(
+    { callerMessage },
+    "Identité client reçue"
+  );
+}
     app.log.info(
       { callerMessage },
       "Transcription client reçue"
@@ -322,6 +333,13 @@ if (
   event.type === "response.output_audio_transcript.done"
 ) {
   const assistantText = event.transcript?.trim().toLowerCase() || "";
+  if (
+  assistantText.includes("votre nom") ||
+  assistantText.includes("vous appelez comment") ||
+  assistantText.includes("pouvez-vous me donner votre nom")
+) {
+  awaitingIdentity = true;
+}
 
   const closingPhrases = [
     "bonne journée",
@@ -334,7 +352,7 @@ if (
     phrase => assistantText.includes(phrase)
   );
 
-  if (shouldHangup) {
+if (shouldHangup && callerIdentityKnown) {
     app.log.info(
       { assistantText },
       "Fin d'appel détectée"
@@ -347,6 +365,20 @@ if (
       }
     }, 1500);
   }
+  if (shouldHangup && !callerIdentityKnown) {
+  app.log.info(
+    "Fin refusée : identité client inconnue"
+  );
+
+  sendToOpenAI({
+    type: "response.create",
+    response: {
+      output_modalities: ["audio"],
+      instructions:
+        'L’identité du client n’est pas encore connue. Ne termine pas l’appel. Demande simplement : "Avant de terminer, pouvez-vous me donner votre nom ?"'
+    }
+  });
+}
 }
 
 if (event.type === "session.updated") {
