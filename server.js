@@ -299,11 +299,41 @@ Reste naturel et concis.
   }
 }
 
-      if (event.type === "session.updated") {
-        openAiReady = true;
-        sendGreeting();
-      }
+if (
+  event.type === "response.output_audio_transcript.done"
+) {
+  const assistantText = event.transcript?.trim().toLowerCase() || "";
 
+  const closingPhrases = [
+    "bonne journée",
+    "bonne soirée",
+    "au revoir",
+    "à bientôt"
+  ];
+
+  const shouldHangup = closingPhrases.some(
+    phrase => assistantText.includes(phrase)
+  );
+
+  if (shouldHangup) {
+    app.log.info(
+      { assistantText },
+      "Fin d'appel détectée"
+    );
+
+    setTimeout(() => {
+      if (socket.readyState === WebSocket.OPEN) {
+        app.log.info("Raccrochage automatique de Tom");
+        socket.close();
+      }
+    }, 1500);
+  }
+}
+
+if (event.type === "session.updated") {
+  openAiReady = true;
+  sendGreeting();
+}
       if (
         event.type === "response.output_audio.delta" &&
         streamSid &&
