@@ -746,7 +746,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
           },
           output: {
             format: { type: "audio/pcmu" },
-          voice: "marin",
+         voice: "echo",
             speed: 1.05,
           },
         },
