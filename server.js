@@ -767,10 +767,6 @@ app.get("/media-stream", { websocket: true }, (socket) => {
         state.responseActive = true;
       }
 
-      if (event.type === "input_audio_buffer.speech_started") {
-        interruptAssistantPlayback();
-      }
-
       if (
         event.type ===
         "conversation.item.input_audio_transcription.completed"
