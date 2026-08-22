@@ -1,4 +1,4 @@
-// TOM PC FROID VOICE - V2.3 - demarrage audio synchronise + diagnostic realtime
+// TOM PC FROID VOICE - V2.4 DIAGNOSTIC - trace detaillee des reponses OpenAI Realtime
 import Fastify from "fastify";
 import websocket from "@fastify/websocket";
 import formbody from "@fastify/formbody";
@@ -877,6 +877,39 @@ app.get("/media-stream", { websocket: true }, (socket) => {
     }, 6000);
   }
  
+  function buildResponseDiagnostics(response) {
+    if (!response) return null;
+ 
+    return {
+      id: response.id || null,
+      status: response.status || null,
+      status_details: response.status_details || null,
+      conversation_id: response.conversation_id || null,
+      max_output_tokens: response.max_output_tokens ?? null,
+      output_modalities: response.output_modalities || null,
+      voice: response.voice || null,
+      output_count: Array.isArray(response.output) ? response.output.length : 0,
+      output: Array.isArray(response.output)
+        ? response.output.map((item) => ({
+            id: item?.id || null,
+            type: item?.type || null,
+            status: item?.status || null,
+            role: item?.role || null,
+            content: Array.isArray(item?.content)
+              ? item.content.map((part) => ({
+                  type: part?.type || null,
+                  transcript:
+                    typeof part?.transcript === "string"
+                      ? part.transcript.slice(0, 250)
+                      : null,
+                }))
+              : [],
+          }))
+        : [],
+      usage: response.usage || null,
+    };
+  }
+ 
   openAiWs.on("open", () => {
     state.openAiSocketReady = true;
  
@@ -887,7 +920,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
         voice: "verse",
         speed: 1.10,
       },
-      "Connexion OpenAI Realtime ouverte - V2.3"
+      "Connexion OpenAI Realtime ouverte - V2.4 DIAGNOSTIC"
     );
  
     // Important : aucune session Realtime n'est configurée avant le message
@@ -1074,16 +1107,32 @@ app.get("/media-stream", { websocket: true }, (socket) => {
         state.responseActive = false;
         state.assistantSpeaking = false;
  
+        const responseDiagnostics = buildResponseDiagnostics(event.response);
+ 
         app.log.info(
           {
             responseId: event.response?.id || null,
             status: event.response?.status || null,
+            statusDetails: event.response?.status_details || null,
             phase: state.phase,
             hadAudio: state.responseHadAudio,
             greetingChunks: state.greetingAudioChunks,
+            diagnostics: responseDiagnostics,
           },
-          "Réponse OpenAI terminée"
+          "Réponse OpenAI terminée - diagnostic V2.4"
         );
+ 
+        if (event.response?.status !== "completed") {
+          app.log.warn(
+            {
+              responseId: event.response?.id || null,
+              status: event.response?.status || null,
+              statusDetails: event.response?.status_details || null,
+              diagnostics: responseDiagnostics,
+            },
+            "Réponse OpenAI non complétée - CAUSE A ANALYSER"
+          );
+        }
  
         // Pour l'accueil, response.done n'active jamais la conversation.
         // La source de vérité est : vrai audio reçu -> output_audio.done -> mark Twilio.
@@ -1137,7 +1186,18 @@ app.get("/media-stream", { websocket: true }, (socket) => {
       }
  
       if (event.type === "error") {
-        app.log.error({ openaiError: event }, "Erreur OpenAI Realtime");
+        app.log.error(
+          {
+            openaiError: event,
+            errorType: event.error?.type || null,
+            errorCode: event.error?.code || null,
+            errorMessage: event.error?.message || null,
+            errorParam: event.error?.param || null,
+            eventId: event.event_id || null,
+            phase: state.phase,
+          },
+          "Erreur OpenAI Realtime - diagnostic V2.4"
+        );
       }
     } catch (error) {
       app.log.error(error, "Erreur traitement message OpenAI");
@@ -1268,3 +1328,4 @@ try {
   process.exit(1);
 }
  
+// END TOM V2.4 DIAGNOSTIC - FICHIER COMPLET
