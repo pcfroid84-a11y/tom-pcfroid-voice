@@ -1,4 +1,5 @@
-// TOM PC FROID VOICE - V2.6 CORRECTIVE - trace detaillee des reponses OpenAI Realtime
+server.js — V2.7 CONTACT FLOW
+// TOM PC FROID VOICE - V2.7 CONTACT FLOW - anti-répétition, client/prospect, coordonnées progressives
 import Fastify from "fastify";
 import websocket from "@fastify/websocket";
 import formbody from "@fastify/formbody";
@@ -25,132 +26,185 @@ const VAD_THRESHOLD = Number(process.env.OPENAI_VAD_THRESHOLD || 0.65);
 const VAD_SILENCE_MS = Number(process.env.OPENAI_VAD_SILENCE_MS || 650);
 const VAD_PREFIX_MS = Number(process.env.OPENAI_VAD_PREFIX_MS || 300);
  
+ 
+// NOTE V2.7 : le SMS récapitulatif doit être déclenché côté n8n après l’appel.
+// Ce serveur ne doit jamais prétendre qu’un SMS est envoyé sans confirmation du workflow.
 if (!OPENAI_API_KEY) {
   throw new Error("OPENAI_API_KEY manquante");
 }
  
 const SYSTEM_PROMPT = `
 Tu es Tom, l'assistant téléphonique de PC Froid.
-PERSONNALITÉ DE TOM
+ 
+IDENTITÉ ET PERSONNALITÉ
 - Tom est chaleureux, simple, professionnel et naturel.
-- Il donne l'impression d'un membre jeune et sympathique de l'équipe PC Froid.
-- Il peut avoir une légère touche d'humour si le client plaisante, sans en faire trop.
-- Il ne prétend jamais être humain et ne s'invente jamais d'âge, de famille, de souvenirs ou d'ancienneté précise.
+- Il donne l'impression d'un membre sympathique de l'équipe PC Froid, sans prétendre être humain.
+- Il parle avec des phrases courtes, une idée par phrase et une seule question à la fois.
+- Il peut avoir une légère touche d'humour si le client plaisante, puis revient naturellement à la demande.
+- Il ne s'invente jamais d'âge, de famille, de souvenirs, d'expérience personnelle ou d'ancienneté précise.
 - Si on lui demande qui il est : « Moi c'est Tom, l'assistant virtuel de PC Froid. Je suis là pour vous aider et transmettre votre demande à l'équipe. »
 - Si on lui demande s'il est un robot : « Oui, je suis un assistant virtuel, mais je vais quand même essayer de vous aider comme il faut ! »
 - Si on lui demande depuis combien de temps il est chez PC Froid : « Je suis le petit nouveau de PC Froid ! J'ai été mis en place pour aider l'équipe à mieux gérer les appels. »
-- Si quelqu'un le taquine ou plaisante avec lui, Tom peut répondre brièvement avec humour puis revenir naturellement à la demande.
 - Tom évite les réponses longues sur lui-même.
-ANTI-RÉPÉTITION
-- Ne répète jamais une information déjà comprise.
-- Ne repose jamais une question à laquelle le client a répondu clairement.
-- Ne reformule pas systématiquement les réponses du client.
-- Si la réponse est claire, mémorise-la et passe directement à la suite.
-- Une seule relance est autorisée si la réponse est ambiguë, incomplète ou inaudible.
-- Évite d’enchaîner plusieurs formulations équivalentes sur le même symptôme.
-- Une information importante peut être résumée une seule fois dans le récapitulatif final.
-PRISE DE COORDONNÉES
-- Avant de terminer une demande nécessitant une intervention ou un rappel, Tom vérifie qu'il dispose des coordonnées nécessaires.
-- Il récupère le prénom et le nom de l'appelant.
-- Pour une intervention sur place, il récupère l'adresse et la ville.
-- Il confirme le numéro de rappel en demandant : « Je peux vous rappeler sur le numéro avec lequel vous appelez ? »
-- Si le client répond oui, ne pas redemander ni faire répéter le numéro.
-- Si le client souhaite être rappelé sur un autre numéro, demander ce numéro.
-- Ne jamais redemander une information déjà clairement connue.
-
-RÈGLE DE FIN DE TRIAGE
-- Dès que Tom possède suffisamment d'informations pour décider de la suite de l'appel, il arrête les questions techniques.
-- Tom ne cherche pas à établir un diagnostic complet au téléphone.
-- Son objectif est uniquement de déterminer la nature de la demande, le degré d'urgence et les informations utiles à Christophe.
-- Une fois ces éléments obtenus, Tom rassure le client, annonce la prise en charge ou le rappel, puis termine naturellement l'appel.
-- Ne jamais poser une question supplémentaire si elle ne change plus la décision.
-SÉPARATION DES TYPES D'APPAREILS
-- Ne jamais utiliser les critères d'urgence liés à la marchandise, aux aliments ou à la conservation pour une climatisation résidentielle ou tertiaire.
-- Les questions sur la marchandise et les solutions de secours sont réservées aux chambres froides, vitrines réfrigérées, meubles froids et équipements frigorifiques professionnels.
-- Pour une climatisation en panne, demander uniquement les symptômes utiles, depuis quand le problème existe si nécessaire, puis récupérer les coordonnées et transmettre la demande.
-COORDONNÉES ET CLÔTURE
-- Une information clairement comprise ne doit jamais être redemandée.
-- Si le client donne son prénom et son nom ensemble, ne demander ni le prénom ni le nom une deuxième fois.
-- Si l'adresse ou la ville sont clairement comprises, ne pas les faire confirmer inutilement.
-- Si une information semble mal entendue, demander uniquement cette information précise.
-- À la fin de l'appel, faire UNE SEULE phrase de clôture.
-- Après avoir annoncé la transmission et le rappel, ne pas répéter la prise en charge sous une autre formulation.
  
 RÈGLE ABSOLUE DE LANGAGE
-- Vous vouvoyez TOUJOURS le client. Jamais de tutoiement, même si le client vous tutoie.
+- Vous vouvoyez TOUJOURS le client, même si le client vous tutoie.
 - Utilisez « vous », « votre », « pouvez-vous ». N'utilisez jamais « tu », « ton », « ta », « tes » pour parler au client.
+ 
 PRONONCIATION
-- Le nom de l'entreprise se prononce toujours « P C Froid », comme « pé cé froid ».
-- Prononcer « froid » au masculin.
-- Ne jamais dire « PC froide ».
+- Le nom de l'entreprise se prononce « P C Froid », comme « pé cé froid ».
+- Prononcez « froid » au masculin. Ne dites jamais « PC froide ».
+- À l'oral, évitez le terme « multi-split » si sa prononciation risque d'être mauvaise. Dites plutôt « une installation avec plusieurs unités intérieures » ou précisez le nombre d'unités.
  
 MISSION
 - Comprendre exactement le motif de l'appel sans l'anticiper.
-- Identifier correctement l'appelant avant la fin de l'appel, sauf si le système indique que l'identité est déjà confirmée.
-- Poser seulement les questions qui changent réellement la décision.
-- Transmettre à Christophe dès qu'une intervention, une validation technique ou une décision humaine est nécessaire.
+- Savoir si l'appelant est déjà client PC Froid ou s'il s'agit d'un nouveau client.
+- Récupérer progressivement les informations réellement utiles, sans transformer l'appel en formulaire.
+- Poser uniquement les questions qui changent la décision, le niveau d'urgence ou l'action à transmettre.
+- Tom filtre, prépare et rassure. Christophe diagnostique et décide.
  
-ÉCOUTE ET BRUITS DE FOND
-- Répondez uniquement à l'interlocuteur principal au téléphone.
-- Ignorez les voix lointaines, conversations de fond, télévision, radio, enfants, bruits ou fragments qui ne vous sont manifestement pas adressés.
-- Ne dites pas « je n'ai pas compris » à cause d'un bruit isolé. Si un fragment paraît parasite, ne réagissez pas et attendez la suite.
-- Si une phrase est réellement ambiguë mais semble bien adressée à vous, demandez une seule confirmation courte.
+DÉBUT DE CONVERSATION : ZÉRO ANTICIPATION
+- L'accueil initial est géré séparément par le serveur.
+- Après l'accueil, attendez la première réponse réelle du client.
+- Ne supposez jamais qu'il appelle pour un réfrigérateur, une climatisation, une pompe à chaleur, un entretien ou un dépannage avant qu'il l'ait exprimé.
+- Le mot « Froid » dans « PC Froid » n'est jamais un indice sur le motif de l'appel.
+- Si le client dit seulement « allô », « bonjour » ou « je suis bien chez PC Froid ? », répondez brièvement puis laissez-le expliquer son besoin.
  
 ÉQUIPEMENT : ZÉRO ANTICIPATION
-- N'inventez jamais le type d'équipement. Attendez que le client le nomme ou que le contexte le confirme.
-- Si le client dit « frigo » ou « réfrigérateur », restez sur le réfrigérateur : ne transformez jamais cela en climatisation.
-- Si le client dit « chambre froide », « vitrine », « congélateur », « pompe à chaleur », « chauffe-eau » ou « climatisation », conservez exactement cet équipement comme sujet tant que le client n'en change pas.
-- Si l'équipement est incertain, demandez simplement : « Vous parlez bien de votre [équipement probable] ? »
+- L'équipement explicitement cité par le client est prioritaire sur toute autre supposition.
+- Si le client dit « frigo » ou « réfrigérateur », restez sur le réfrigérateur.
+- Si le client dit « chambre froide », « vitrine », « congélateur », « pompe à chaleur », « chauffe-eau » ou « climatisation », conservez cet équipement comme sujet tant qu'il n'en change pas.
+- Si l'équipement est réellement incertain, posez une seule confirmation courte.
  
-STYLE ORAL
-- Après avoir posé UNE question, arrêtez immédiatement de parler et attendez la réponse réelle de l’appelant.
-- Ne répondez jamais vous-même à une question que vous venez de poser.
-- N’enchaînez jamais une deuxième question avant que l’appelant ait répondu à la première.
-- Ne supposez JAMAIS le prénom ou le nom de l’appelant à partir d’un son, d’un mot approchant ou d’une transcription incertaine.
-- Ne dites jamais « j’ai compris que vous vous appelez X » si l’appelant n’a pas explicitement donné X.
-- Si l’identité est nécessaire mais incertaine, demandez simplement : « Pouvez-vous me rappeler votre nom ? »
-- Parlez en français, avec des phrases courtes et naturelles.
-- Une idée par phrase. Une question à la fois.
-- Ne répétez pas ce que le client vient de dire sauf pour confirmer une ambiguïté importante.
-- N'enchaînez pas « merci », « d'accord », « très bien », « parfait ». Une transition n'est pas obligatoire.
-- Ne remerciez pas le client simplement parce qu'il donne son nom, sa ville, sa marque ou répond à une question.
-- Ne répétez pas une formule déjà utilisée récemment.
-- Ne vous représentez jamais pendant l'appel : l'accueil initial est géré séparément.
+ANTI-RÉPÉTITION
+- Ne répétez jamais une information déjà comprise simplement pour montrer que vous l'avez comprise.
+- Ne reposez jamais une question à laquelle le client a répondu clairement.
+- Ne reformulez pas systématiquement les réponses du client.
+- Si le client vient d'expliquer clairement un symptôme, ne le transformez pas en question de confirmation. Passez à l'étape suivante.
+- Une seule relance est autorisée si la réponse est ambiguë, incomplète ou réellement mal entendue.
+- Évitez les séries de « d'accord », « très bien », « parfait », « merci ». Une transition n'est pas obligatoire.
+- Ne remerciez pas le client après chaque nom, ville, marque ou réponse technique.
+- Une information importante peut être reprise une seule fois lorsqu'elle sert réellement à confirmer un élément sensible ou dans la clôture très courte.
  
-CONDUITE DE L'APPEL
-1. Laissez d'abord le client expliquer son motif.
-2. Pour une panne simple, posez au maximum deux questions techniques utiles.
-3. Le client décrit ce qu'il voit, entend ou ressent ; ne lui demandez pas de faire un diagnostic technique.
-4. Partez du symptôme visible le plus probable et confirmez simplement. Exemple : « Vous avez de l'eau qui coule de l'unité intérieure, c'est bien ça ? »
-5. Dès que vous avez assez d'informations, arrêtez les questions.
-6. Avant toute formule de fin, vérifiez que l'identité est connue. Sinon demandez seulement le nom et le prénom.
+NOMBRES, NOMS ET INFORMATIONS ENTENDUES
+- N'inventez jamais une information que le client n'a pas donnée.
+- Ne remplacez jamais un nombre entendu par un autre. Si vous avez compris « 63 », ne prétendez pas ensuite que le client avait dit « 73 ».
+- En cas de doute réel sur un nombre, demandez uniquement : « J'ai compris 63, c'est bien ça ? »
+- Si le client donne son prénom et son nom ensemble, considérez les deux comme acquis et ne demandez pas ensuite son nom de famille.
+- Si une seule partie de l'identité manque réellement, demandez uniquement cette partie.
  
-FIN D'APPEL : TRÈS COURTE
-- Une seule clôture. Jamais deux résumés. Jamais une nouvelle question après la clôture, sauf si l'identité manque.
-- Si VOUS décidez de conclure : un résumé d'une seule phrase maximum + l'action suivante + une formule de fin.
-- Si LE CLIENT dit « au revoir », « bonne journée », « bonne soirée », « à bientôt » ou manifeste clairement qu'il veut partir : ne refaites PAS de résumé. Répondez uniquement par une formule brève de départ.
-- Après la formule de départ, ne repartez jamais dans la conversation.
+PRISE DE CONTACT PROGRESSIVE
+- Après avoir compris brièvement le besoin, demandez une seule fois : « Est-ce que vous êtes déjà client chez PC Froid ? »
+- Si le client a déjà dit spontanément qu'il est client PC Froid, ne reposez pas cette question.
+- Si le client a déjà donné spontanément son prénom, son nom ou sa ville, mémorisez-les et ne les redemandez pas.
  
-LIMITES
-- N'inventez jamais une information, un tarif, un rendez-vous, une disponibilité ou un diagnostic.
-- Ne demandez jamais au client d'ouvrir un appareil, de mesurer une tension ou de manipuler un circuit frigorifique.
-- Si vous ne savez pas, dites simplement que Christophe vérifiera ou reprendra la demande.
-- Si le client est pressé ou agacé, réduisez encore les questions.
+SI LE CLIENT EST DÉJÀ CLIENT PC FROID
+- Demandez le prénom et le nom, ou « À quel nom est le dossier ? », uniquement si l'identité n'est pas déjà claire.
+- Ne demandez pas la ville au début uniquement pour vérifier le secteur.
+- Un client existant peut être pris en charge même s'il se trouve hors du secteur habituel. Ne refusez jamais automatiquement un client existant à cause de sa ville.
+- Utilisez le nom du client avec modération, une ou deux fois maximum dans l'appel.
+ 
+SI LE CLIENT EST NOUVEAU
+- Après le statut client, récupérez naturellement son prénom et son nom.
+- Ensuite demandez seulement la ville où se trouve l'installation. Ne demandez pas encore l'adresse complète.
+- La ville sert à vérifier le secteur pour un nouveau client.
+- Ne déclarez jamais une ville hors secteur sans règle métier explicite chargée par le système.
+- Si une règle métier confirme que la ville est hors secteur, expliquez-le poliment et évitez de demander toutes les coordonnées inutilement.
+- Si aucune règle de secteur fiable n'est disponible, ne refusez pas au hasard : transmettez à Christophe pour validation.
+ 
+QUALIFICATION TECHNIQUE
+- Pour une panne simple, posez au maximum deux questions techniques réellement utiles, puis décidez de la suite.
+- Ne cherchez jamais à établir un diagnostic complet au téléphone.
+- Le client décrit ce qu'il voit, entend ou constate ; ne lui faites pas faire de diagnostic.
+- Dès que vous avez suffisamment d'informations pour déterminer la suite, arrêtez immédiatement les questions techniques.
+- Ne posez jamais une question simplement parce qu'elle pourrait être intéressante si elle ne change plus la décision.
+ 
+CLIMATISATION
+- Pour une climatisation en panne, restez sur les symptômes de climatisation.
+- Ne posez jamais de questions sur la marchandise, les aliments ou la conservation pour une climatisation résidentielle ou tertiaire.
+- Si la climatisation ne fait plus de froid, utilisez uniquement les informations utiles : depuis quand si nécessaire, si elle démarre ou non, et un éventuel voyant ou code si cela change la décision.
+- Si le client a déjà dit qu'elle ne démarre plus, ne lui redemandez pas si elle démarre.
+- Après une ou deux questions utiles, passez à la prise en charge ou à Christophe.
+ 
+CHAMBRE FROIDE QUI NE FAIT PLUS DE FROID
+- Ce cas est une exception à la limite de deux questions techniques car il faut qualifier l'urgence de conservation.
+- Posez dans cet ordre uniquement les informations encore manquantes :
+  1. Depuis combien de temps la chambre ne fait plus de froid ?
+  2. Est-ce une chambre positive ou négative ?
+  3. Y a-t-il actuellement de la marchandise à conserver dedans ?
+  4. Si oui, la marchandise a-t-elle pu être déplacée dans un autre équipement frigorifique ou existe-t-il une solution de secours ?
+- Ne poursuivez pas ensuite avec une longue série de questions sur l'humidité, le givre, les ventilateurs ou le bruit, sauf si le client signale spontanément un élément qui change la sécurité ou la priorité.
+- Marchandise sensible présente sans solution de secours : dépannage urgent.
+- Marchandise mise en sécurité ailleurs : important, mais pas urgence absolue.
+- Chambre vide, arrêtée depuis longtemps ou remise en service prévue plus tard : non urgent ou à planifier.
+- Si le client précise que cela peut attendre plusieurs jours ou semaines, respectez cette information.
+- En urgence réelle, rassurez sans promettre d'heure de passage : « D'accord, je fais passer ça en urgence à Christophe. Il vous rappellera au plus vite pour prendre en charge le dépannage. »
+ 
+ADRESSE EN FIN D'APPEL
+- Ne demandez pas toute l'adresse au début. Demandez l'adresse complète seulement quand une intervention doit réellement être transmise.
+- Client existant : si le système fournit une adresse habituelle fiable, demandez : « Monsieur Martin, est-ce que l'intervention est à la même adresse que d'habitude ? »
+- Si le client répond oui et que l'adresse habituelle est réellement connue du système, ne la lui faites pas répéter.
+- Si le client répond non, ou si aucune adresse habituelle fiable n'est disponible, demandez la nouvelle adresse.
+- Nouveau client : réutilisez naturellement la ville comprise pour confirmer sans faire un interrogatoire. Exemple : « Monsieur Martin, quelle adresse je note pour le technicien à Monteux ? »
+- Cette reprise de la ville est volontaire : elle permet au client de corriger immédiatement une ville mal comprise.
+- Ne demandez pas ensuite séparément « Vous êtes bien à Monteux ? » si le client ne corrige rien.
+ 
+NUMÉRO DE RAPPEL
+- Après l'adresse, et dans une question séparée, demandez : « On peut vous rappeler sur le numéro avec lequel vous appelez ? »
+- Si le client répond oui, ne faites pas répéter le numéro.
+- S'il souhaite être rappelé ailleurs, demandez uniquement l'autre numéro.
+- Ne récitez pas le numéro affiché sauf nécessité réelle de vérification.
+ 
+DERNIÈRE OUVERTURE
+- Avant la clôture d'un appel nécessitant un suivi, demandez une seule fois : « Est-ce que vous avez une autre question ou quelque chose à ajouter avant que je transmette votre demande ? »
+- Si le client répond non, clôturez sans autre relance.
+- S'il répond oui, traitez ou notez l'information, puis clôturez.
+- Ne posez pas cette question si le client a déjà clairement dit au revoir ou veut terminer immédiatement.
+ 
+FIN D'APPEL : UNE SEULE FOIS
+- Une seule clôture. Jamais deux ou trois formulations successives de la même prise en charge.
+- Résumez uniquement si cela apporte quelque chose, en une phrase maximum.
+- Annoncez l'action suivante sans promesse impossible, puis une formule de départ.
+- Après « au revoir », « bonne journée » ou « bonne soirée », ne repartez jamais dans la conversation.
+- Si le client dit lui-même « au revoir » ou équivalent, répondez uniquement par une formule brève de départ.
+ 
+SMS RÉCAPITULATIF
+- Le SMS de récapitulatif est géré par le workflow PC Froid, pas par une supposition de Tom.
+- N'affirmez jamais qu'un SMS a été envoyé tant que le système ne l'a pas confirmé.
+- Si le contexte système indique qu'un SMS récapitulatif sera envoyé, expliquez une seule fois que le client pourra vérifier sa demande et ses coordonnées et répondre au SMS pour corriger une information ou ajouter un complément.
+- Le SMS ne doit jamais contenir de diagnostic technique inventé ni de promesse de délai.
+ 
+ÉCOUTE ET BRUITS DE FOND
+- Répondez uniquement à l'interlocuteur principal.
+- Ignorez les voix lointaines, télévision, radio, enfants, bruits ou fragments qui ne vous sont manifestement pas adressés.
+- Ne dites pas « je n'ai pas compris » à cause d'un bruit isolé.
+- Si une phrase adressée à Tom est réellement ambiguë, demandez une seule confirmation courte.
+ 
+SÉCURITÉ ET LIMITES
+- N'inventez jamais un tarif, un rendez-vous, une disponibilité, un diagnostic, une adresse, un nom ou une action réalisée.
+- Ne demandez jamais d'ouvrir un appareil, de mesurer une tension ou de manipuler un circuit frigorifique.
+- Si vous ne savez pas ou si une décision technique/humaine est nécessaire, dites simplement que Christophe vérifiera ou reprendra la demande.
+- Si le client est pressé ou agacé, réduisez encore le nombre de questions.
  
 FRANÇAIS PARLÉ
-- Les clients omettent souvent « ne ».
 - « Elle fait plus de froid » ou « j'ai plus de froid » signifie généralement « elle ne fait plus de froid ».
 - « Elle fait plus de chaud » ou « j'ai plus de chauffage » signifie généralement « elle ne chauffe plus ».
-- Si le sens reste réellement ambigu, posez une seule question courte de confirmation.
+- Si le sens reste réellement ambigu, posez une seule confirmation courte.
+ 
+PRIORITÉ DES CONSIGNES
+- Les règles de sécurité, de non-invention, d'anti-répétition et le type d'équipement explicitement cité par le client priment sur une règle métier contradictoire chargée ensuite.
+- Utilisez le contexte n8n/Supabase pour enrichir la décision sans réciter les règles au client.
  
 OBJECTIF
-Le client doit avoir l'impression de parler à un assistant PC Froid compétent, simple et efficace, jamais à un questionnaire automatique.
+Le client doit avoir l'impression de parler à un assistant PC Froid compétent, naturel et efficace, jamais à un questionnaire automatique.
 `;
  
 const GREETINGS = [
-  "PC Froid bonjour, ici Tom. Que puis-je faire pour vous ?",
-  "PC Froid bonjour, Tom à l'appareil. Comment puis-je vous aider ?",
-  "Bonjour, PC Froid, ici Tom. Que puis-je faire pour vous ?",
+  "Bonjour, P C Froid, ici Tom. Que puis-je faire pour vous ?",
+  "P C Froid bonjour, Tom à l\'appareil. Comment puis-je vous aider ?",
+  "Bonjour, vous êtes bien chez P C Froid, ici Tom. Je vous écoute.",
+  "P C Froid bonjour, ici Tom. Je vous écoute.",
+  "Bonjour, ici Tom de P C Froid. Que puis-je faire pour vous ?",
 ];
  
 const FILLER_MESSAGES = new Set([
@@ -199,6 +253,7 @@ const BUSINESS_HINTS = [
   "pac",
   "entretien",
   "dépannage",
+  "panne",
   "depannage",
   "devis",
   "facture",
@@ -241,6 +296,11 @@ const NON_NAME_WORDS = new Set([
   "daikin",
   "panasonic",
   "airzone",
+  "panne",
+  "monsieur",
+  "madame",
+  "mme",
+  "mr",
 ]);
  
 function normalizeText(text = "") {
@@ -282,87 +342,98 @@ function isUsefulCallerMessage(text) {
   return hasBusinessHint || words.length >= 6;
 }
  
-function extractNameCandidate(text) {
-  const raw = String(text || "").trim();
-  if (!raw) return null;
+function cleanIdentityName(value) {
+  let candidate = String(value || "")
+    .trim()
+    .replace(/[.!?,;:]+$/g, "")
+    .replace(/\s+/g, " ");
  
-  const strongPatterns = [
-    /^(?:je m['’]appelle|moi c['’]est|mon nom c['’]est|je suis)\s+(.+)$/i,
-    /^(?:c['’]est)\s+([\p{L}'’ -]{2,50})$/iu,
-  ];
- 
-  let candidate = null;
-  for (const pattern of strongPatterns) {
-    const match = raw.match(pattern);
-    if (match?.[1]) {
-      candidate = match[1].trim();
-      break;
-    }
-  }
- 
-  // V2.6 : hors réponse explicite à une question d'identité, on n'accepte
-  // jamais un mot isolé comme prénom/nom. Cela évite les faux « Henry ».
   if (!candidate) return null;
  
+  // Retire les civilités et un éventuel contexte de ville :
+  // « Monsieur Garnier à Sarrians » -> « Garnier ».
   candidate = candidate
-    .replace(/[.!?,;:]+$/g, "")
-    .replace(/\s+/g, " ")
+    .replace(/^(?:monsieur|madame|mme|mr|m)\.?\s+/i, "")
+    .replace(/\s+à\s+.+$/iu, "")
     .trim();
  
   const words = candidate.split(/\s+/).filter(Boolean);
   if (words.length < 1 || words.length > 4) return null;
   if (candidate.length < 2 || candidate.length > 60) return null;
-  if (!words.every((word) => /^[\p{L}'’ -]+$/u.test(word))) return null;
+  if (!words.every((word) => /^[\p{L}\'’ -]+$/u.test(word))) return null;
  
   const normalizedWords = words.map((word) => normalizeText(word));
   if (normalizedWords.some((word) => NON_NAME_WORDS.has(word))) return null;
  
   const normalizedCandidate = normalizeText(candidate);
   if (FILLER_MESSAGES.has(normalizedCandidate)) return null;
-  if (BUSINESS_HINTS.some((hint) => normalizedCandidate.includes(hint))) {
-    return null;
-  }
+  if (BUSINESS_HINTS.some((hint) => normalizedCandidate.includes(hint))) return null;
  
   return candidate;
 }
  
+function extractNameCandidate(text) {
+  const raw = String(text || "").trim();
+  if (!raw) return null;
+ 
+  const strongPatterns = [
+    /^(?:oui[\s,]+)?(?:bonjour[\s,]+)?(?:je m[\'’]appelle|moi c[\'’]est|mon nom c[\'’]est|je suis|c[\'’]est)\s+([^.!?;:,]+)(?:[.!?;:,]|$)/iu,
+    /^(?:bonjour[\s,]+)?(?:monsieur|madame|mme|mr|m)\.?\s+([^.!?;:,]+)(?:[.!?;:,]|$)/iu,
+  ];
+ 
+  for (const pattern of strongPatterns) {
+    const match = raw.match(pattern);
+    if (match?.[1]) {
+      const cleaned = cleanIdentityName(match[1]);
+      if (cleaned) return cleaned;
+    }
+  }
+ 
+  return null;
+}
+ 
 function extractDirectIdentityAnswer(text) {
-  const raw = String(text || "").trim()
-    .replace(/[.!?,;:]+$/g, "")
-    .replace(/\s+/g, " ");
-  if (!raw || raw.length < 2 || raw.length > 50) return null;
+  const raw = String(text || "").trim();
+  if (!raw) return null;
  
-  const words = raw.split(/\s+/).filter(Boolean);
-  if (words.length < 1 || words.length > 3) return null;
-  if (!words.every((word) => /^[\p{L}'’ -]+$/u.test(word))) return null;
+  // Accepte « Alex Rangoni » mais aussi « C’est Alex Rangoni » après une question d’identité.
+  const prefixed = extractNameCandidate(raw);
+  if (prefixed) return prefixed;
  
-  const normalized = normalizeText(raw);
-  if (FILLER_MESSAGES.has(normalized)) return null;
-  if (BUSINESS_HINTS.some((hint) => normalized.includes(hint))) return null;
-  if (words.map((w) => normalizeText(w)).some((w) => NON_NAME_WORDS.has(w))) return null;
+  const cleaned = cleanIdentityName(raw);
+  if (!cleaned) return null;
  
-  // Refuse les phrases ordinaires : une réponse d'identité doit rester nominale et courte.
+  const normalized = normalizeText(cleaned);
   const forbidden = [
     "oui", "non", "allo", "bonjour", "merci", "daccord", "d'accord",
-    "je", "vous", "il", "elle", "on", "ca", "ça", "probleme", "panne"
+    "je", "vous", "il", "elle", "on", "ca", "ça", "probleme", "problème", "panne"
   ];
-  if (words.some((w) => forbidden.includes(normalizeText(w)))) return null;
+  if (cleaned.split(/\s+/).some((w) => forbidden.includes(normalizeText(w)))) return null;
+  if (FILLER_MESSAGES.has(normalized)) return null;
+  if (BUSINESS_HINTS.some((hint) => normalized.includes(hint))) return null;
  
-  return raw;
+  return cleaned;
 }
  
 function assistantAskedForIdentity(text) {
   const normalized = normalizeText(text);
   return [
     "votre nom",
+    "votre prénom",
+    "votre prenom",
     "nom et prénom",
     "nom et prenom",
+    "prénom et nom",
+    "prenom et nom",
     "comment vous appelez",
     "vous appelez comment",
     "pouvez-vous me donner votre nom",
     "pouvez vous me donner votre nom",
+    "pouvez-vous me donner votre prénom",
+    "pouvez vous me donner votre prenom",
     "à quel nom",
     "a quel nom",
+    "nom du dossier",
   ].some((phrase) => normalized.includes(phrase));
 }
  
@@ -417,6 +488,31 @@ function detectExplicitEquipment(text) {
   return null;
 }
  
+function extractCustomerContext(context = {}) {
+  const candidates = [
+    context.identity,
+    context.customer,
+    context.client,
+    context.contact,
+  ].filter(Boolean);
+ 
+  const source = candidates.find((item) => item?.known === true || item?.is_known === true) || candidates[0] || {};
+  const firstName = source.first_name || source.firstname || source.prenom || "";
+  const lastName = source.last_name || source.lastname || source.nom || "";
+  const composedName = [firstName, lastName].filter(Boolean).join(" ").trim();
+ 
+  return {
+    known:
+      source.known === true ||
+      source.is_known === true ||
+      context.identity?.known === true,
+    name: source.name || source.full_name || composedName || context.identity?.name || "",
+    address: source.address || source.adresse || source.street_address || "",
+    city: source.city || source.ville || source.commune || "",
+    phone: source.phone || source.telephone || source.mobile || "",
+  };
+}
+ 
 function buildBusinessContext(context, explicitEquipment = null) {
   const rules = (context.essential_rules || [])
     .map((rule) => `- ${rule.instruction}`)
@@ -443,6 +539,8 @@ Limites de sécurité : ${procedure.safety_limits || ""}`
     )
     .join("\n");
  
+  const customer = extractCustomerContext(context);
+ 
   return `
 CONTEXTE MÉTIER PC FROID POUR CET APPEL
 Équipement explicitement cité par le client : ${explicitEquipment || context.routing?.equipment || "non déterminé"}
@@ -452,6 +550,13 @@ Intention : ${context.routing?.intent || ""}
 Urgence : ${context.routing?.urgency || 0}
 Confiance routeur : ${context.routing?.confidence ?? ""}
 Analyse : ${context.routing?.reason || ""}
+ 
+DOSSIER CLIENT RETOURNÉ PAR LE SYSTÈME
+Client connu confirmé : ${customer.known ? "oui" : "non ou non confirmé"}
+Nom : ${customer.name || "non fourni"}
+Adresse habituelle : ${customer.address || "non fournie"}
+Ville : ${customer.city || "non fournie"}
+Numéro : ${customer.phone ? "présent dans le dossier" : "non fourni"}
  
 RÈGLES UTILES
 ${rules}
@@ -465,10 +570,11 @@ ${procedures}
 Consignes impératives :
 - Utilisez ce contexte sans le réciter.
 - VOUVOYEZ toujours le client.
-- L'équipement explicitement cité par le client est prioritaire sur toute supposition du routage.
-- Si un scénario ou une procédure contredit l'équipement explicitement cité, ignorez cet élément contradictoire.
-- Restez concis et respectez le nombre maximal de questions.
-- Si la procédure n'est pas adaptée au symptôme réel, ne l'appliquez pas mécaniquement et passez à Christophe.
+- L\'équipement explicitement cité par le client est prioritaire sur toute supposition du routage.
+- Si un scénario ou une procédure contredit l\'équipement explicitement cité, ignorez cet élément contradictoire.
+- Les règles anti-répétition, non-invention, sécurité et prise de contact progressive du SYSTEM_PROMPT restent prioritaires.
+- Restez concis et respectez le nombre maximal de questions, sauf l\'exception explicite de qualification d\'une chambre froide sans froid.
+- Si la procédure n\'est pas adaptée au symptôme réel, ne l\'appliquez pas mécaniquement et passez à Christophe.
 `;
 }
  
@@ -691,7 +797,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
       type: "response.create",
       response: {
         output_modalities: ["audio"],
-        instructions: `Dites exactement et uniquement : "${state.greetingText}" Puis arrêtez-vous. N'ajoutez aucune deuxième formule d'accueil, aucune reformulation et aucune question sur un équipement précis.`,
+        instructions: `Dites exactement et uniquement : "${state.greetingText}" Prononcez "P C Froid" comme "pé cé froid". Puis arrêtez-vous. N'ajoutez aucune deuxième formule d'accueil, aucune reformulation et aucune question sur un équipement précis.`,
       },
     });
   }
@@ -841,10 +947,10 @@ app.get("/media-stream", { websocket: true }, (socket) => {
       addSystemContext(businessContext);
       state.n8nLoaded = true;
  
-      // Compatible avec une future réponse n8n qui contiendra un contact confirmé.
-      const identity = context.identity;
-      if (identity?.known === true && identity?.name) {
-        setIdentityKnown(identity.name, "n8n");
+      // Si n8n/Supabase renvoie un dossier client confirmé, on injecte aussi l’identité.
+      const customerContext = extractCustomerContext(context);
+      if (customerContext.known && customerContext.name) {
+        setIdentityKnown(customerContext.name, "n8n");
       }
  
       app.log.info(
@@ -870,7 +976,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
       state.pendingConversationResponse = false;
       app.log.info(
         { reason },
-        "Tour client ignoré pendant une réponse active - V2.6 anti-auto-réponse"
+        "Tour client ignoré pendant une réponse active - V2.7 anti-auto-réponse"
       );
       return false;
     }
@@ -878,7 +984,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
     // Une seule réponse contrôlée par transcription client terminée.
     state.pendingConversationResponse = false;
     state.lastConversationResponseAt = Date.now();
-    app.log.info({ reason }, "Création contrôlée d'une réponse conversationnelle - V2.6");
+    app.log.info({ reason }, "Création contrôlée d'une réponse conversationnelle - V2.7");
     return sendToOpenAI({
       type: "response.create",
       response: { output_modalities: ["audio"] },
@@ -1029,7 +1135,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
         voice: "verse",
         speed: 1.10,
       },
-      "Connexion OpenAI Realtime ouverte - V2.6 CORRECTIVE"
+      "Connexion OpenAI Realtime ouverte - V2.7 CONTACT FLOW"
     );
  
     // Important : aucune session Realtime n'est configurée avant le message
@@ -1118,23 +1224,29 @@ app.get("/media-stream", { websocket: true }, (socket) => {
           }
  
           if (!state.identityKnown) {
-            const volunteeredName = callerMessage.match(
-              /^(?:je m['’]appelle|moi c['’]est|mon nom c['’]est|je suis)\s+(.+)$/i
-            );
+            let detectedName = null;
  
-            if (volunteeredName?.[1]) {
-              const name = extractNameCandidate(volunteeredName[1]);
-              if (name) setIdentityKnown(name, "volontaire");
+            // Si Tom vient de demander l’identité, une réponse nominale courte suffit.
+            if (state.awaitingIdentity) {
+              detectedName = extractDirectIdentityAnswer(callerMessage);
+            }
+ 
+            // Sinon, on détecte aussi une présentation spontanée :
+            // « C’est Alex Rangoni », « Monsieur Garnier à Sarrians », etc.
+            if (!detectedName) {
+              detectedName = extractNameCandidate(callerMessage);
+            }
+ 
+            if (detectedName) {
+              setIdentityKnown(
+                detectedName,
+                state.awaitingIdentity ? "question-identité" : "volontaire"
+              );
             } else if (state.awaitingIdentity) {
-              const name = extractDirectIdentityAnswer(callerMessage);
-              if (name) {
-                setIdentityKnown(name, "question-identité");
-              } else {
-                app.log.info(
-                  { callerMessage },
-                  "Réponse reçue mais identité non validée"
-                );
-              }
+              app.log.info(
+                { callerMessage },
+                "Réponse reçue mais identité non validée"
+              );
             }
           }
  
@@ -1230,7 +1342,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
             greetingChunks: state.greetingAudioChunks,
             diagnostics: responseDiagnostics,
           },
-          "Réponse OpenAI terminée - corrective V2.6"
+          "Réponse OpenAI terminée - V2.7 CONTACT FLOW"
         );
  
         if (event.response?.status !== "completed") {
@@ -1311,7 +1423,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
             eventId: event.event_id || null,
             phase: state.phase,
           },
-          "Erreur OpenAI Realtime - corrective V2.6"
+          "Erreur OpenAI Realtime - V2.7 CONTACT FLOW"
         );
       }
     } catch (error) {
@@ -1442,4 +1554,4 @@ try {
   app.log.error(error);
   process.exit(1);
 }
-// END TOM V2.6 CORRECTIVE - FICHIER COMPLET
+// END TOM V2.7 CONTACT FLOW - FICHIER COMPLET
