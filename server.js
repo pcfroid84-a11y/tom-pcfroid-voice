@@ -1,4 +1,4 @@
-server.js — V2.7 CONTACT FLOW
+// server.js — V2.7 CONTACT FLOW
 // TOM PC FROID VOICE - V2.7 CONTACT FLOW - anti-répétition, client/prospect, coordonnées progressives
 import Fastify from "fastify";
 import websocket from "@fastify/websocket";
