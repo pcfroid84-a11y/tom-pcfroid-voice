@@ -1,4 +1,4 @@
-// TOM PC FROID VOICE - V2.2 - accueil verrouille + audio stable
+// TOM PC FROID VOICE - V2.3 - demarrage audio synchronise + diagnostic realtime
 import Fastify from "fastify";
 import websocket from "@fastify/websocket";
 import formbody from "@fastify/formbody";
@@ -422,8 +422,15 @@ app.get("/media-stream", { websocket: true }, (socket) => {
     callSid: null,
     callerPhone: null,
     calledPhone: null,
+    openAiSocketReady: false,
+    sessionUpdateSent: false,
     openAiReady: false,
     greetingSent: false,
+    greetingText: null,
+    greetingResponseId: null,
+    greetingAttempts: 0,
+    greetingAudioChunks: 0,
+    greetingAudioBytesApprox: 0,
     greetingPlaybackMark: null,
     greetingPlaybackFallback: null,
     conversationModeEnabled: false,
@@ -524,17 +531,23 @@ app.get("/media-stream", { websocket: true }, (socket) => {
   }
  
   function scheduleGreetingPlaybackMark() {
-    if (!state.streamSid || state.greetingPlaybackMark) return;
+    if (!state.streamSid || state.greetingPlaybackMark || state.closed) return;
  
+    // En V2.3, on n'active JAMAIS la conversation sur un accueil sans audio.
+    // On attend un vrai audio OpenAI, puis la confirmation de lecture Twilio.
     if (!state.responseHadAudio) {
-      app.log.warn("Accueil sans audio détecté ; activation du mode conversation");
-      enableConversationMode("greeting-no-audio");
+      app.log.warn(
+        {
+          greetingResponseId: state.greetingResponseId,
+          chunks: state.greetingAudioChunks,
+        },
+        "Accueil terminé sans audio : aucun passage en mode conversation"
+      );
       return;
     }
  
     const markName = `greeting-${Date.now()}`;
     state.greetingPlaybackMark = markName;
-    state.responseHadAudio = false;
     state.phase = "greeting-playback";
  
     sendToTwilio({
@@ -543,42 +556,133 @@ app.get("/media-stream", { websocket: true }, (socket) => {
       mark: { name: markName },
     });
  
-    // Sécurité : si Twilio ne renvoie pas le mark, on ne bloque pas l'appel.
+    app.log.info(
+      {
+        markName,
+        chunks: state.greetingAudioChunks,
+        approxBase64Chars: state.greetingAudioBytesApprox,
+      },
+      "Mark de fin d'accueil envoyé à Twilio"
+    );
+ 
+    // Le mark Twilio est la source de vérité de fin de lecture.
+    // On laisse une marge large uniquement pour éviter un appel bloqué à vie.
     state.greetingPlaybackFallback = setTimeout(() => {
-      if (state.greetingPlaybackMark === markName) {
-        app.log.warn("Mark accueil non reçu ; activation de secours du dialogue");
+      if (state.greetingPlaybackMark === markName && !state.closed) {
+        app.log.error(
+          { markName },
+          "Mark accueil non confirmé par Twilio après 10 s"
+        );
         state.greetingPlaybackMark = null;
-        enableConversationMode("greeting-mark-timeout");
+        enableConversationMode("greeting-mark-timeout-10s");
       }
-    }, 5000);
+    }, 10000);
+  }
+ 
+  function sendGreetingResponse({ retry = false } = {}) {
+    if (state.closed || !state.openAiReady || !state.streamSid) return false;
+ 
+    if (!state.greetingText) {
+      state.greetingText = GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
+    }
+ 
+    state.greetingAttempts += 1;
+    state.phase = "greeting-generating";
+    state.responseHadAudio = false;
+    state.greetingAudioChunks = 0;
+    state.greetingAudioBytesApprox = 0;
+    state.greetingResponseId = null;
+ 
+    app.log.info(
+      {
+        greeting: state.greetingText,
+        attempt: state.greetingAttempts,
+        retry,
+      },
+      retry ? "Nouvelle tentative d'accueil" : "Envoi de l'accueil unique"
+    );
+ 
+    return sendToOpenAI({
+      type: "response.create",
+      response: {
+        output_modalities: ["audio"],
+        instructions: `Dites exactement et uniquement : "${state.greetingText}" Puis arrêtez-vous. N'ajoutez aucune deuxième formule d'accueil, aucune reformulation et aucune question sur un équipement précis.`,
+      },
+    });
   }
  
   function maybeSendGreeting() {
-    if (state.greetingSent || !state.openAiReady || !state.streamSid) return;
+    if (
+      state.greetingSent ||
+      !state.openAiReady ||
+      !state.streamSid ||
+      state.closed
+    ) {
+      return;
+    }
  
     state.greetingSent = true;
-    state.phase = "greeting-generating";
-    const greeting = GREETINGS[Math.floor(Math.random() * GREETINGS.length)];
  
-    // Pendant l'accueil : aucune réponse automatique au bruit ou au "allo".
-    updateTurnDetection({
-      createResponse: false,
-      interruptResponse: false,
-    });
- 
+    // Le VAD est DÉJÀ configuré avec create_response=false dans la session initiale.
+    // Ne surtout pas envoyer un second session.update juste avant response.create :
+    // cela créait une course entre configuration et génération de l'accueil.
     addSystemContext(
       state.identityKnown
         ? `IDENTITÉ APPELANT : confirmée (${state.identityName || "contact connu"}). Ne redemandez pas son identité.`
         : "IDENTITÉ APPELANT : non confirmée. Avant toute fin d'appel, demandez le nom et le prénom une seule fois."
     );
  
-    app.log.info({ greeting }, "Envoi de l'accueil unique");
+    sendGreetingResponse();
+  }
+ 
+  function maybeConfigureOpenAISession() {
+    if (
+      state.closed ||
+      state.sessionUpdateSent ||
+      !state.openAiSocketReady ||
+      !state.streamSid
+    ) {
+      return;
+    }
+ 
+    state.sessionUpdateSent = true;
+ 
+    app.log.info(
+      { streamSid: state.streamSid },
+      "Twilio prêt + OpenAI WebSocket prêt : configuration Realtime"
+    );
  
     sendToOpenAI({
-      type: "response.create",
-      response: {
+      type: "session.update",
+      session: {
+        type: "realtime",
+        model: REALTIME_MODEL,
         output_modalities: ["audio"],
-        instructions: `Dites exactement et uniquement : "${greeting}" Puis arrêtez-vous. N'ajoutez aucune deuxième formule d'accueil, aucune reformulation et aucune question sur un équipement précis.`,
+        max_output_tokens: 180,
+        instructions: SYSTEM_PROMPT,
+        audio: {
+          input: {
+            format: { type: "audio/pcmu" },
+            noise_reduction: { type: "near_field" },
+            transcription: {
+              model: TRANSCRIBE_MODEL,
+              language: "fr",
+            },
+            turn_detection: {
+              type: "server_vad",
+              threshold: VAD_THRESHOLD,
+              prefix_padding_ms: VAD_PREFIX_MS,
+              silence_duration_ms: VAD_SILENCE_MS,
+              create_response: false,
+              interrupt_response: false,
+            },
+          },
+          output: {
+            format: { type: "audio/pcmu" },
+            voice: "verse",
+            speed: 1.10,
+          },
+        },
       },
     });
   }
@@ -774,6 +878,8 @@ app.get("/media-stream", { websocket: true }, (socket) => {
   }
  
   openAiWs.on("open", () => {
+    state.openAiSocketReady = true;
+ 
     app.log.info(
       {
         vadThreshold: VAD_THRESHOLD,
@@ -781,44 +887,12 @@ app.get("/media-stream", { websocket: true }, (socket) => {
         voice: "verse",
         speed: 1.10,
       },
-      "Connexion OpenAI Realtime ouverte - V2.2"
+      "Connexion OpenAI Realtime ouverte - V2.3"
     );
  
-    sendToOpenAI({
-      type: "session.update",
-      session: {
-        type: "realtime",
-        model: REALTIME_MODEL,
-        output_modalities: ["audio"],
-        max_output_tokens: 180,
-        instructions: SYSTEM_PROMPT,
-        audio: {
-          input: {
-            format: { type: "audio/pcmu" },
-            // Le téléphone est un micro proche de la bouche : near_field réduit
-            // les bruits et voix lointaines avant le VAD et le modèle.
-            noise_reduction: { type: "near_field" },
-            transcription: {
-              model: TRANSCRIBE_MODEL,
-              language: "fr",
-            },
-            turn_detection: {
-              type: "server_vad",
-              threshold: VAD_THRESHOLD,
-              prefix_padding_ms: VAD_PREFIX_MS,
-              silence_duration_ms: VAD_SILENCE_MS,
-              create_response: false,
-              interrupt_response: false,
-            },
-          },
-          output: {
-            format: { type: "audio/pcmu" },
-            voice: "verse",
-            speed: 1.10,
-          },
-        },
-      },
-    });
+    // Important : aucune session Realtime n'est configurée avant le message
+    // Twilio `start`. Cela garantit que streamSid existe avant l'accueil.
+    maybeConfigureOpenAISession();
   });
  
   openAiWs.on("message", (raw) => {
@@ -826,12 +900,31 @@ app.get("/media-stream", { websocket: true }, (socket) => {
       const event = JSON.parse(raw.toString());
  
       if (event.type === "session.updated") {
+        const firstReady = !state.openAiReady;
         state.openAiReady = true;
+ 
+        app.log.info(
+          { firstReady, phase: state.phase },
+          "Session OpenAI Realtime mise à jour"
+        );
+ 
         maybeSendGreeting();
       }
  
       if (event.type === "response.created") {
         state.responseActive = true;
+ 
+        if (state.phase === "greeting-generating") {
+          state.greetingResponseId = event.response?.id || null;
+        }
+ 
+        app.log.info(
+          {
+            responseId: event.response?.id || null,
+            phase: state.phase,
+          },
+          "Réponse OpenAI créée"
+        );
       }
  
       if (
@@ -910,12 +1003,48 @@ app.get("/media-stream", { websocket: true }, (socket) => {
         state.assistantSpeaking = true;
         state.responseHadAudio = true;
  
+        if (
+          state.phase === "greeting-generating" ||
+          state.phase === "greeting-playback"
+        ) {
+          state.greetingAudioChunks += 1;
+          state.greetingAudioBytesApprox += event.delta?.length || 0;
+ 
+          if (state.greetingAudioChunks === 1) {
+            app.log.info(
+              {
+                responseId: event.response_id || state.greetingResponseId,
+              },
+              "Premier paquet audio d'accueil reçu d'OpenAI"
+            );
+          }
+        }
+ 
         if (state.streamSid && socket.readyState === WebSocket.OPEN) {
           sendToTwilio({
             event: "media",
             streamSid: state.streamSid,
             media: { payload: event.delta },
           });
+        }
+      }
+ 
+      if (event.type === "response.output_audio.done") {
+        app.log.info(
+          {
+            responseId: event.response_id || null,
+            phase: state.phase,
+            chunks: state.greetingAudioChunks,
+            hadAudio: state.responseHadAudio,
+          },
+          "Flux audio OpenAI terminé"
+        );
+ 
+        if (
+          state.phase === "greeting-generating" ||
+          state.phase === "greeting-playback"
+        ) {
+          scheduleGreetingPlaybackMark();
         }
       }
  
@@ -945,14 +1074,48 @@ app.get("/media-stream", { websocket: true }, (socket) => {
         state.responseActive = false;
         state.assistantSpeaking = false;
  
-        // L'accueil est une phase séparée : on attend que Twilio confirme
-        // que tout l'audio d'accueil a réellement été joué avant d'autoriser
-        // les réponses automatiques du dialogue.
+        app.log.info(
+          {
+            responseId: event.response?.id || null,
+            status: event.response?.status || null,
+            phase: state.phase,
+            hadAudio: state.responseHadAudio,
+            greetingChunks: state.greetingAudioChunks,
+          },
+          "Réponse OpenAI terminée"
+        );
+ 
+        // Pour l'accueil, response.done n'active jamais la conversation.
+        // La source de vérité est : vrai audio reçu -> output_audio.done -> mark Twilio.
         if (
           state.phase === "greeting-generating" ||
           state.phase === "greeting-playback"
         ) {
-          scheduleGreetingPlaybackMark();
+          if (!state.responseHadAudio && !state.greetingPlaybackMark) {
+            if (state.greetingAttempts < 2 && !state.closed) {
+              app.log.warn(
+                {
+                  status: event.response?.status || null,
+                  responseId: event.response?.id || null,
+                },
+                "Accueil OpenAI sans audio : une seule nouvelle tentative"
+              );
+ 
+              setTimeout(() => {
+                if (!state.closed && !state.conversationModeEnabled) {
+                  sendGreetingResponse({ retry: true });
+                }
+              }, 350);
+            } else {
+              app.log.error(
+                {
+                  status: event.response?.status || null,
+                  responseId: event.response?.id || null,
+                },
+                "Accueil impossible après 2 tentatives : appel laissé ouvert pour diagnostic"
+              );
+            }
+          }
           return;
         }
  
@@ -1015,7 +1178,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
             "Flux Twilio démarré"
           );
  
-          maybeSendGreeting();
+          maybeConfigureOpenAISession();
           break;
         }
  
@@ -1034,6 +1197,9 @@ app.get("/media-stream", { websocket: true }, (socket) => {
             }
  
             state.greetingPlaybackMark = null;
+            state.responseHadAudio = false;
+            state.greetingAudioChunks = 0;
+            state.greetingAudioBytesApprox = 0;
             app.log.info("Accueil entièrement joué par Twilio");
             enableConversationMode("greeting-mark-confirmed");
             break;
@@ -1101,3 +1267,4 @@ try {
   app.log.error(error);
   process.exit(1);
 }
+ 
