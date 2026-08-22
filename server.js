@@ -1,4 +1,4 @@
-// TOM PC FROID VOICE - V2.4 DIAGNOSTIC - trace detaillee des reponses OpenAI Realtime
+// TOM PC FROID VOICE - V2.5 CORRECTIVE - trace detaillee des reponses OpenAI Realtime
 import Fastify from "fastify";
 import websocket from "@fastify/websocket";
 import formbody from "@fastify/formbody";
@@ -437,6 +437,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
     phase: "boot",
     assistantSpeaking: false,
     responseActive: false,
+    pendingConversationResponse: false,
     responseHadAudio: false,
     playbackMark: null,
     n8nLoading: false,
@@ -518,12 +519,12 @@ app.get("/media-stream", { websocket: true }, (socket) => {
     state.conversationModeEnabled = true;
     state.phase = "conversation";
  
-    // Après l'accueil, le VAD peut créer les réponses du dialogue.
-    // L'interruption automatique reste volontairement désactivée :
-    // un bruit de fond ou un petit chevauchement ne doit jamais couper Tom
-    // au milieu d'une phrase.
+    // V2.5 : le VAD détecte toujours les tours de parole, mais il ne crée
+    // PLUS lui-même les réponses. Le serveur déclenche response.create
+    // après la transcription, uniquement si aucune réponse n'est active.
+    // Cela supprime les erreurs conversation_already_has_active_response.
     updateTurnDetection({
-      createResponse: true,
+      createResponse: false,
       interruptResponse: false,
     });
  
@@ -658,7 +659,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
         type: "realtime",
         model: REALTIME_MODEL,
         output_modalities: ["audio"],
-        max_output_tokens: 180,
+        max_output_tokens: 800,
         instructions: SYSTEM_PROMPT,
         audio: {
           input: {
@@ -774,6 +775,23 @@ app.get("/media-stream", { websocket: true }, (socket) => {
     } finally {
       state.n8nLoading = false;
     }
+  }
+ 
+  function requestConversationResponse(reason = "caller-turn") {
+    if (state.closed || !state.conversationModeEnabled) return false;
+ 
+    if (state.responseActive) {
+      state.pendingConversationResponse = true;
+      app.log.info({ reason }, "Réponse différée : une réponse OpenAI est déjà active");
+      return false;
+    }
+ 
+    state.pendingConversationResponse = false;
+    app.log.info({ reason }, "Création contrôlée d'une réponse conversationnelle");
+    return sendToOpenAI({
+      type: "response.create",
+      response: { output_modalities: ["audio"] },
+    });
   }
  
   function requestIdentityRecovery() {
@@ -920,7 +938,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
         voice: "verse",
         speed: 1.10,
       },
-      "Connexion OpenAI Realtime ouverte - V2.4 DIAGNOSTIC"
+      "Connexion OpenAI Realtime ouverte - V2.5 CORRECTIVE"
     );
  
     // Important : aucune session Realtime n'est configurée avant le message
@@ -1029,6 +1047,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
           }
  
           void loadN8nContext(callerMessage);
+          requestConversationResponse("transcription-completed");
         }
       }
  
@@ -1119,7 +1138,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
             greetingChunks: state.greetingAudioChunks,
             diagnostics: responseDiagnostics,
           },
-          "Réponse OpenAI terminée - diagnostic V2.4"
+          "Réponse OpenAI terminée - corrective V2.5"
         );
  
         if (event.response?.status !== "completed") {
@@ -1130,7 +1149,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
               statusDetails: event.response?.status_details || null,
               diagnostics: responseDiagnostics,
             },
-            "Réponse OpenAI non complétée - CAUSE A ANALYSER"
+            "Réponse OpenAI non complétée - REPONSE NON COMPLETE"
           );
         }
  
@@ -1175,6 +1194,11 @@ app.get("/media-stream", { websocket: true }, (socket) => {
           return;
         }
  
+        if (state.pendingConversationResponse && !state.callerRequestedEnd) {
+          state.pendingConversationResponse = false;
+          setTimeout(() => requestConversationResponse("pending-after-response-done"), 20);
+        }
+ 
         if (state.identityRecoveryNeeded && !state.identityKnown) {
           state.identityRecoveryNeeded = false;
           requestIdentityRecovery();
@@ -1196,7 +1220,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
             eventId: event.event_id || null,
             phase: state.phase,
           },
-          "Erreur OpenAI Realtime - diagnostic V2.4"
+          "Erreur OpenAI Realtime - corrective V2.5"
         );
       }
     } catch (error) {
@@ -1328,4 +1352,4 @@ try {
   process.exit(1);
 }
  
-// END TOM V2.4 DIAGNOSTIC - FICHIER COMPLET
+// END TOM V2.5 CORRECTIVE - FICHIER COMPLET
