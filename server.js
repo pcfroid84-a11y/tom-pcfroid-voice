@@ -1,4 +1,4 @@
-// TOM PC FROID VOICE - V2.5 CORRECTIVE - trace detaillee des reponses OpenAI Realtime
+// TOM PC FROID VOICE - V2.6 CORRECTIVE - trace detaillee des reponses OpenAI Realtime
 import Fastify from "fastify";
 import websocket from "@fastify/websocket";
 import formbody from "@fastify/formbody";
@@ -55,6 +55,12 @@ MISSION
 - Si l'équipement est incertain, demandez simplement : « Vous parlez bien de votre [équipement probable] ? »
  
 STYLE ORAL
+- Après avoir posé UNE question, arrêtez immédiatement de parler et attendez la réponse réelle de l’appelant.
+- Ne répondez jamais vous-même à une question que vous venez de poser.
+- N’enchaînez jamais une deuxième question avant que l’appelant ait répondu à la première.
+- Ne supposez JAMAIS le prénom ou le nom de l’appelant à partir d’un son, d’un mot approchant ou d’une transcription incertaine.
+- Ne dites jamais « j’ai compris que vous vous appelez X » si l’appelant n’a pas explicitement donné X.
+- Si l’identité est nécessaire mais incertaine, demandez simplement : « Pouvez-vous me rappeler votre nom ? »
 - Parlez en français, avec des phrases courtes et naturelles.
 - Une idée par phrase. Une question à la fois.
 - Ne répétez pas ce que le client vient de dire sauf pour confirmer une ambiguïté importante.
@@ -246,8 +252,9 @@ function extractNameCandidate(text) {
     }
   }
  
-  // Quand Tom vient explicitement de demander le nom, une réponse courte peut être un nom.
-  if (!candidate) candidate = raw;
+  // V2.6 : hors réponse explicite à une question d'identité, on n'accepte
+  // jamais un mot isolé comme prénom/nom. Cela évite les faux « Henry ».
+  if (!candidate) return null;
  
   candidate = candidate
     .replace(/[.!?,;:]+$/g, "")
@@ -269,6 +276,31 @@ function extractNameCandidate(text) {
   }
  
   return candidate;
+}
+ 
+function extractDirectIdentityAnswer(text) {
+  const raw = String(text || "").trim()
+    .replace(/[.!?,;:]+$/g, "")
+    .replace(/\s+/g, " ");
+  if (!raw || raw.length < 2 || raw.length > 50) return null;
+ 
+  const words = raw.split(/\s+/).filter(Boolean);
+  if (words.length < 1 || words.length > 3) return null;
+  if (!words.every((word) => /^[\p{L}'’ -]+$/u.test(word))) return null;
+ 
+  const normalized = normalizeText(raw);
+  if (FILLER_MESSAGES.has(normalized)) return null;
+  if (BUSINESS_HINTS.some((hint) => normalized.includes(hint))) return null;
+  if (words.map((w) => normalizeText(w)).some((w) => NON_NAME_WORDS.has(w))) return null;
+ 
+  // Refuse les phrases ordinaires : une réponse d'identité doit rester nominale et courte.
+  const forbidden = [
+    "oui", "non", "allo", "bonjour", "merci", "daccord", "d'accord",
+    "je", "vous", "il", "elle", "on", "ca", "ça", "probleme", "panne"
+  ];
+  if (words.some((w) => forbidden.includes(normalizeText(w)))) return null;
+ 
+  return raw;
 }
  
 function assistantAskedForIdentity(text) {
@@ -438,6 +470,10 @@ app.get("/media-stream", { websocket: true }, (socket) => {
     assistantSpeaking: false,
     responseActive: false,
     pendingConversationResponse: false,
+    // V2.6 : le serveur ne met plus en file une réponse pendant que Tom parle.
+    // Une nouvelle réponse ne part qu’après une transcription client terminée.
+    lastCallerTranscriptAt: 0,
+    lastConversationResponseAt: 0,
     responseHadAudio: false,
     playbackMark: null,
     n8nLoading: false,
@@ -519,7 +555,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
     state.conversationModeEnabled = true;
     state.phase = "conversation";
  
-    // V2.5 : le VAD détecte toujours les tours de parole, mais il ne crée
+    // V2.6 : le VAD détecte toujours les tours de parole, mais il ne crée
     // PLUS lui-même les réponses. Le serveur déclenche response.create
     // après la transcription, uniquement si aucune réponse n'est active.
     // Cela supprime les erreurs conversation_already_has_active_response.
@@ -780,14 +816,21 @@ app.get("/media-stream", { websocket: true }, (socket) => {
   function requestConversationResponse(reason = "caller-turn") {
     if (state.closed || !state.conversationModeEnabled) return false;
  
-    if (state.responseActive) {
-      state.pendingConversationResponse = true;
-      app.log.info({ reason }, "Réponse différée : une réponse OpenAI est déjà active");
+    // V2.6 : si Tom parle encore, on ne programme PAS une seconde réponse.
+    // Cela évite l’effet « Tom pose la question puis se répond tout seul ».
+    if (state.responseActive || state.assistantSpeaking) {
+      state.pendingConversationResponse = false;
+      app.log.info(
+        { reason },
+        "Tour client ignoré pendant une réponse active - V2.6 anti-auto-réponse"
+      );
       return false;
     }
  
+    // Une seule réponse contrôlée par transcription client terminée.
     state.pendingConversationResponse = false;
-    app.log.info({ reason }, "Création contrôlée d'une réponse conversationnelle");
+    state.lastConversationResponseAt = Date.now();
+    app.log.info({ reason }, "Création contrôlée d'une réponse conversationnelle - V2.6");
     return sendToOpenAI({
       type: "response.create",
       response: { output_modalities: ["audio"] },
@@ -938,7 +981,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
         voice: "verse",
         speed: 1.10,
       },
-      "Connexion OpenAI Realtime ouverte - V2.5 CORRECTIVE"
+      "Connexion OpenAI Realtime ouverte - V2.6 CORRECTIVE"
     );
  
     // Important : aucune session Realtime n'est configurée avant le message
@@ -985,6 +1028,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
         const callerMessage = event.transcript?.trim();
  
         if (callerMessage) {
+          state.lastCallerTranscriptAt = Date.now();
           app.log.info(
             { callerMessage, phase: state.phase },
             "Transcription client reçue"
@@ -1034,7 +1078,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
               const name = extractNameCandidate(volunteeredName[1]);
               if (name) setIdentityKnown(name, "volontaire");
             } else if (state.awaitingIdentity) {
-              const name = extractNameCandidate(callerMessage);
+              const name = extractDirectIdentityAnswer(callerMessage);
               if (name) {
                 setIdentityKnown(name, "question-identité");
               } else {
@@ -1138,7 +1182,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
             greetingChunks: state.greetingAudioChunks,
             diagnostics: responseDiagnostics,
           },
-          "Réponse OpenAI terminée - corrective V2.5"
+          "Réponse OpenAI terminée - corrective V2.6"
         );
  
         if (event.response?.status !== "completed") {
@@ -1194,10 +1238,9 @@ app.get("/media-stream", { websocket: true }, (socket) => {
           return;
         }
  
-        if (state.pendingConversationResponse && !state.callerRequestedEnd) {
-          state.pendingConversationResponse = false;
-          setTimeout(() => requestConversationResponse("pending-after-response-done"), 20);
-        }
+        // V2.6 : aucune réponse différée automatique après response.done.
+        // Tom attend obligatoirement une nouvelle transcription client terminée.
+        state.pendingConversationResponse = false;
  
         if (state.identityRecoveryNeeded && !state.identityKnown) {
           state.identityRecoveryNeeded = false;
@@ -1220,7 +1263,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
             eventId: event.event_id || null,
             phase: state.phase,
           },
-          "Erreur OpenAI Realtime - corrective V2.5"
+          "Erreur OpenAI Realtime - corrective V2.6"
         );
       }
     } catch (error) {
@@ -1351,5 +1394,4 @@ try {
   app.log.error(error);
   process.exit(1);
 }
- 
-// END TOM V2.5 CORRECTIVE - FICHIER COMPLET
+// END TOM V2.6 CORRECTIVE - FICHIER COMPLET
