@@ -1567,7 +1567,8 @@ if (
     app.log.info("Fin refusée : identité client inconnue");
   }
 }
- 
+ }
+     
       if (event.type === "response.done") {
         state.responseActive = false;
         state.assistantSpeaking = false;
