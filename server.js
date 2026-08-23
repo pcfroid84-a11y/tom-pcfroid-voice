@@ -1516,7 +1516,6 @@ if (
         ) {
           scheduleGreetingPlaybackMark();
         }
-      }
 
      else {
   // La génération audio de Tom est terminée.
