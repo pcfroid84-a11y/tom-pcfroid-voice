@@ -778,6 +778,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
     explicitEquipment: null,
     pendingHangup: false,
     hangupMark: null,
+   closingStarted: false,
     hangupFallback: null,
     closed: false,
   };
