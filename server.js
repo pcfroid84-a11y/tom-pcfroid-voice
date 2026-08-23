@@ -1106,6 +1106,13 @@ app.get("/media-stream", { websocket: true }, (socket) => {
  
   function requestConversationResponse(reason = "caller-turn") {
     if (state.closed || !state.conversationModeEnabled) return false;
+   if (state.closingStarted) {
+  app.log.info(
+    { reason },
+    "Réponse ignorée : clôture déjà commencée"
+  );
+  return false;
+}
  
     // V2.6 : si Tom parle encore, on ne programme PAS une seconde réponse.
     // Cela évite l’effet « Tom pose la question puis se répond tout seul ».
