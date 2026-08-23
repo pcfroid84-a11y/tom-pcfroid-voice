@@ -1,4 +1,4 @@
-// TOM PC FROID VOICE - V2.8 DEFINITIVE - base croisée avec le code actuel, écoute naturelle, coordonnées progressives, tarifs fiables, clôture unique
+// TOM PC FROID VOICE - V2.9 SECTOR PATCH - base V2.8 figée + contrôle secteur nouveau client + correction de ville
 import Fastify from "fastify";
 import websocket from "@fastify/websocket";
 import formbody from "@fastify/formbody";
@@ -120,6 +120,7 @@ SECTEUR D'INTERVENTION
   « Nous intervenons principalement dans le Vaucluse et les secteurs limitrophes. Bastia est malheureusement trop éloigné pour une intervention habituelle. »
 
 - Si Tom n'est pas certain qu'une commune du 13 ou du 30 soit suffisamment proche du Vaucluse, il ne refuse pas de lui-même. Il indique que Christophe vérifiera si l'intervention est possible.
+- Si le serveur injecte « ZONE CONFIRMÉE », « HORS SECTEUR » ou « ZONE À VÉRIFIER », cette décision est prioritaire : Tom ne la contredit pas et ne refait pas lui-même le raisonnement géographique.
 
 - Pour un CLIENT DÉJÀ CONNU DE PC FROID, ne jamais refuser automatiquement à cause de la distance ou de la ville. Un client existant peut être pris en charge hors du secteur habituel.
 
@@ -134,6 +135,8 @@ NOMBRES, VILLES ET ADRESSES
 - Ne remplacez jamais un nombre entendu par un autre. Si vous avez compris « 63 », ne dites jamais ensuite que le client avait dit « 73 ».
 - En cas de doute réel : « J'ai compris 63, c'est bien ça ? »
 - Une information clairement comprise ne doit pas être redemandée.
+- Si le client corrige une ville, un nom, un nombre ou une adresse, la nouvelle information remplace immédiatement l'ancienne. Ne conservez jamais les deux versions et ne demandez pas au client de choisir entre l'ancienne valeur erronée et sa correction.
+- Exemple : si Tom avait compris « La Seyne » et que le client dit « Vous avez mal compris, je suis à Marseille », la ville devient uniquement « Marseille ».
 - Exception utile : en fin d'appel, vous pouvez réutiliser naturellement la ville déjà comprise dans la demande d'adresse. Exemple : « Monsieur Martin, quelle adresse je note pour le technicien à Monteux ? » Cela permet au client de corriger la ville si elle a été mal entendue.
 
 QUALIFICATION TECHNIQUE
@@ -374,6 +377,407 @@ function normalizeText(text = "") {
     .toLowerCase()
     .replace(/[.!?,;:]+/g, "")
     .replace(/\s+/g, " ");
+}
+
+function normalizeCityKey(value = "") {
+  return String(value || "")
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase()
+    .replace(/[’']/g, " ")
+    .replace(/-/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+// V2.9 : contrôle de zone volontairement conservateur.
+// - toutes les communes du Vaucluse sont acceptées pour un nouveau client ;
+// - quelques communes proches des départements 13 et 30 sont acceptées explicitement ;
+// - seules des villes clairement éloignées sont refusées automatiquement ;
+// - tout cas non listé reste « à vérifier » afin d'éviter un faux refus.
+const VAUCLUSE_CITIES = [
+  "Althen-des-Paluds",
+  "Ansouis",
+  "Apt",
+  "Aubignan",
+  "Aurel",
+  "Auribeau",
+  "Avignon",
+  "Le Barroux",
+  "La Bastide-des-Jourdans",
+  "La Bastidonne",
+  "Le Beaucet",
+  "Beaumes-de-Venise",
+  "Beaumettes",
+  "Beaumont-de-Pertuis",
+  "Beaumont-du-Ventoux",
+  "Blauvac",
+  "Bollène",
+  "Bonnieux",
+  "Brantes",
+  "Buisson",
+  "Buoux",
+  "Bédarrides",
+  "Bédoin",
+  "Cabrières-d'Aigues",
+  "Cabrières-d'Avignon",
+  "Cadenet",
+  "Caderousse",
+  "Cairanne",
+  "Camaret-sur-Aigues",
+  "Caromb",
+  "Carpentras",
+  "Caseneuve",
+  "Castellet-en-Luberon",
+  "Caumont-sur-Durance",
+  "Cavaillon",
+  "Cheval-Blanc",
+  "Châteauneuf-de-Gadagne",
+  "Châteauneuf-du-Pape",
+  "Courthézon",
+  "Crestet",
+  "Crillon-le-Brave",
+  "Cucuron",
+  "Entraigues-sur-la-Sorgue",
+  "Entrechaux",
+  "Faucon",
+  "Flassan",
+  "Fontaine-de-Vaucluse",
+  "Gargas",
+  "Gignac",
+  "Gigondas",
+  "Gordes",
+  "Goult",
+  "Grambois",
+  "Grillon",
+  "L'Isle-sur-la-Sorgue",
+  "Jonquerettes",
+  "Jonquières",
+  "Joucas",
+  "Lacoste",
+  "Lafare",
+  "Lagarde-Paréol",
+  "Lagarde-d'Apt",
+  "Lagnes",
+  "Lamotte-du-Rhône",
+  "Lapalud",
+  "Lauris",
+  "Lioux",
+  "Loriol-du-Comtat",
+  "Lourmarin",
+  "Malaucène",
+  "Malemort-du-Comtat",
+  "Maubec",
+  "Mazan",
+  "Mirabeau",
+  "Modène",
+  "Mondragon",
+  "Monieux",
+  "Monteux",
+  "Morières-lès-Avignon",
+  "Mormoiron",
+  "Mornas",
+  "La Motte-d'Aigues",
+  "Murs",
+  "Ménerbes",
+  "Mérindol",
+  "Méthamis",
+  "Oppède",
+  "Orange",
+  "Pernes-les-Fontaines",
+  "Pertuis",
+  "Peypin-d'Aigues",
+  "Piolenc",
+  "Le Pontet",
+  "Puget",
+  "Puyméras",
+  "Puyvert",
+  "Rasteau",
+  "Richerenches",
+  "Roaix",
+  "Robion",
+  "La Roque-Alric",
+  "La Roque-sur-Pernes",
+  "Roussillon",
+  "Rustrel",
+  "Sablet",
+  "Saignon",
+  "Saint-Christol",
+  "Saint-Didier",
+  "Saint-Hippolyte-le-Graveyron",
+  "Saint-Léger-du-Ventoux",
+  "Saint-Marcellin-lès-Vaison",
+  "Saint-Martin-de-Castillon",
+  "Saint-Martin-de-la-Brasque",
+  "Saint-Pantaléon",
+  "Saint-Pierre-de-Vassols",
+  "Saint-Romain-en-Viennois",
+  "Saint-Roman-de-Malegarde",
+  "Saint-Saturnin-lès-Apt",
+  "Saint-Saturnin-lès-Avignon",
+  "Saint-Trinit",
+  "Sainte-Cécile-les-Vignes",
+  "Sannes",
+  "Sarrians",
+  "Sault",
+  "Saumane-de-Vaucluse",
+  "Savoillan",
+  "Sivergues",
+  "Sorgues",
+  "Suzette",
+  "Séguret",
+  "Sérignan-du-Comtat",
+  "Taillades",
+  "Le Thor",
+  "La Tour-d'Aigues",
+  "Travaillan",
+  "Uchaux",
+  "Vacqueyras",
+  "Vaison-la-Romaine",
+  "Valréas",
+  "Vaugines",
+  "Vedène",
+  "Velleron",
+  "Venasque",
+  "Viens",
+  "Villars",
+  "Villedieu",
+  "Villelaure",
+  "Villes-sur-Auzon",
+  "Violès",
+  "Visan",
+  "Vitrolles-en-Lubéron"
+];
+
+const NEIGHBOR_SECTOR_CITIES = [
+  "Barbentane",
+  "Rognonas",
+  "Châteaurenard",
+  "Noves",
+  "Cabannes",
+  "Saint-Andiol",
+  "Plan-d'Orgon",
+  "Orgon",
+  "Sénas",
+  "Mallemort",
+  "Charleval",
+  "La Roque-d'Anthéron",
+  "Saint-Estève-Janson",
+  "Jouques",
+  "Saint-Paul-lès-Durance",
+  "Villeneuve-lès-Avignon",
+  "Les Angles",
+  "Rochefort-du-Gard",
+  "Saze",
+  "Pujaut",
+  "Sauveterre",
+  "Roquemaure",
+  "Montfaucon",
+  "Saint-Laurent-des-Arbres",
+  "Lirac",
+  "Tavel",
+  "Laudun-l'Ardoise",
+  "Codolet",
+  "Chusclan",
+  "Orsan",
+  "Saint-Étienne-des-Sorts",
+  "Pont-Saint-Esprit"
+];
+
+const CLEAR_OUT_OF_SECTOR_CITIES = [
+  "Marseille",
+  "Aix-en-Provence",
+  "Aubagne",
+  "La Ciotat",
+  "Cassis",
+  "Martigues",
+  "Istres",
+  "Arles",
+  "Salon-de-Provence",
+  "Toulon",
+  "Nice",
+  "Cannes",
+  "Antibes",
+  "Fréjus",
+  "Draguignan",
+  "Bastia",
+  "Ajaccio",
+  "Lyon",
+  "Paris",
+  "Montpellier",
+  "Nîmes",
+  "Alès",
+  "Grenoble",
+  "Valence",
+  "Gap",
+  "Digne-les-Bains",
+  "Manosque",
+  "Sisteron"
+];
+
+const IN_SECTOR_CITY_MAP = new Map(
+  [...VAUCLUSE_CITIES, ...NEIGHBOR_SECTOR_CITIES].map((city) => [
+    normalizeCityKey(city),
+    city,
+  ])
+);
+
+const OUT_OF_SECTOR_CITY_MAP = new Map(
+  CLEAR_OUT_OF_SECTOR_CITIES.map((city) => [normalizeCityKey(city), city])
+);
+
+const ALL_KNOWN_CITY_MAP = new Map([
+  ...IN_SECTOR_CITY_MAP,
+  ...OUT_OF_SECTOR_CITY_MAP,
+]);
+
+function classifyServiceArea(city) {
+  const key = normalizeCityKey(city);
+  if (!key) return "unknown";
+  if (IN_SECTOR_CITY_MAP.has(key)) return "in";
+  if (OUT_OF_SECTOR_CITY_MAP.has(key)) return "out";
+  return "unknown";
+}
+
+function assistantAskedForCustomerStatus(text) {
+  const normalized = normalizeText(text);
+  return [
+    "déjà client chez pc froid",
+    "deja client chez pc froid",
+    "êtes-vous déjà client",
+    "etes-vous deja client",
+    "êtes vous déjà client",
+    "etes vous deja client",
+  ].some((phrase) => normalized.includes(phrase));
+}
+
+function extractCustomerStatusAnswer(text) {
+  const normalized = normalizeText(text);
+  if (!normalized) return null;
+
+  if (
+    normalized === "non" ||
+    normalized.startsWith("non ") ||
+    normalized.includes("pas du tout") ||
+    normalized.includes("pas encore client") ||
+    normalized.includes("nouveau client")
+  ) {
+    return "new";
+  }
+
+  if (
+    normalized === "oui" ||
+    normalized.startsWith("oui ") ||
+    normalized.includes("déjà client") ||
+    normalized.includes("deja client") ||
+    normalized.includes("je suis client")
+  ) {
+    return "existing";
+  }
+
+  return null;
+}
+
+function assistantAskedForCity(text) {
+  const normalized = normalizeText(text);
+  if (!normalized || normalized.includes("adresse")) return false;
+
+  if (
+    normalized.includes("ville") &&
+    (
+      normalized.includes("quelle") ||
+      normalized.includes("dans laquelle") ||
+      normalized.includes("se trouve") ||
+      normalized.includes("installation")
+    )
+  ) {
+    return true;
+  }
+
+  return [
+    "dans quelle ville",
+    "quelle ville",
+    "ville où se trouve",
+    "ville ou se trouve",
+    "où se trouve l'installation",
+    "ou se trouve l'installation",
+    "où se trouve l intervention",
+    "ou se trouve l intervention",
+    "quel endroit se trouve l'installation",
+    "quel endroit se trouve l installation",
+    "dans quelle commune",
+    "quelle commune",
+    "localité",
+    "localite",
+  ].some((phrase) => normalized.includes(phrase));
+}
+
+function callerCorrectsCity(text) {
+  const normalized = normalizeText(text);
+  return [
+    "vous avez mal compris",
+    "vous m'avez mal compris",
+    "vous m avez mal compris",
+    "non je suis à",
+    "non je suis a",
+    "non c'est à",
+    "non c est à",
+    "non c'est a",
+    "non c est a",
+    "la ville c'est",
+    "la ville c est",
+  ].some((phrase) => normalized.includes(phrase));
+}
+
+function cleanCityCandidate(value) {
+  let city = String(value || "").trim();
+  if (!city) return null;
+
+  city = city
+    .replace(/[.!?;:].*$/u, "")
+    .replace(/,.*$/u, "")
+    .replace(/\s+(?:vous avez|vous m'avez|vous m avez|mais|par contre|s'il vous plaît|s il vous plait).*$/iu, "")
+    .trim();
+
+  if (!city || city.length < 2 || city.length > 70) return null;
+  if (!/^[\p{L}'’\- ]+$/u.test(city)) return null;
+
+  const normalized = normalizeText(city);
+  if (["oui", "non", "merci", "d'accord", "daccord"].includes(normalized)) return null;
+
+  return city;
+}
+
+function extractCityCandidate(text) {
+  const raw = String(text || "").trim();
+  if (!raw) return null;
+
+  const normalizedRaw = ` ${normalizeCityKey(raw)} `;
+
+  // D'abord les villes connues : on privilégie les noms les plus longs.
+  const knownCities = [...ALL_KNOWN_CITY_MAP.entries()].sort(
+    (a, b) => b[0].length - a[0].length
+  );
+  for (const [key, canonical] of knownCities) {
+    if (normalizedRaw.includes(` ${key} `)) return canonical;
+  }
+
+  const patterns = [
+    /(?:je suis|c['’]est|ça se trouve|ca se trouve|l'installation est|l intervention est)\s+(?:à|a|sur)\s+([\p{L}'’\- ]{2,70})/iu,
+    /(?:ville|commune)\s+(?:c['’]est|est)?\s*(?:à|a|sur)?\s*([\p{L}'’\- ]{2,70})/iu,
+    /^(?:à|a|sur)\s+([\p{L}'’\- ]{2,70})$/iu,
+    /^([\p{L}'’\- ]{2,70})$/u,
+  ];
+
+  for (const pattern of patterns) {
+    const match = raw.match(pattern);
+    if (match?.[1]) {
+      const city = cleanCityCandidate(match[1]);
+      if (city) return city;
+    }
+  }
+
+  return null;
 }
  
 function xmlEscape(value = "") {
@@ -780,6 +1184,11 @@ app.get("/media-stream", { websocket: true }, (socket) => {
     identityRecoveryNeeded: false,
     resumeClosingAfterIdentity: false,
     callerRequestedEnd: false,
+    customerStatus: null,
+    awaitingCustomerStatus: false,
+    awaitingCity: false,
+    interventionCity: null,
+    cityZoneStatus: null,
     finalQuestionAsked: false,
     closingStarted: false,
     explicitEquipment: null,
@@ -1134,7 +1543,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
  
     // Une seule réponse contrôlée par transcription client terminée.
     state.lastConversationResponseAt = Date.now();
-    app.log.info({ reason }, "Création contrôlée d'une réponse conversationnelle - V2.8");
+    app.log.info({ reason }, "Création contrôlée d'une réponse conversationnelle - V2.9");
     return sendToOpenAI({
       type: "response.create",
       response: { output_modalities: ["audio"] },
@@ -1213,6 +1622,40 @@ app.get("/media-stream", { websocket: true }, (socket) => {
     }, 80);
   }
  
+  function sendOutOfSectorClosing(city) {
+    if (state.closed || state.closingStarted) return false;
+
+    const safeCity = String(city || "cette ville").trim() || "cette ville";
+
+    state.callerRequestedEnd = true;
+    state.closingStarted = true;
+    state.conversationModeEnabled = false;
+    state.pendingConversationResponse = false;
+    state.pendingHangup = false;
+
+    if (state.responseActive) {
+      cancelActiveResponse();
+    }
+
+    app.log.info(
+      { city: safeCity, customerStatus: state.customerStatus },
+      "Nouveau client hors secteur : clôture déterministe"
+    );
+
+    setTimeout(() => {
+      sendToOpenAI({
+        type: "response.create",
+        response: {
+          output_modalities: ["audio"],
+          instructions:
+            `Dites exactement et uniquement : "D'accord, ${safeCity}. Pour un nouveau client, nous intervenons principalement dans le Vaucluse et les communes limitrophes de notre secteur. ${safeCity} est malheureusement trop éloigné pour que nous prenions en charge cette intervention. Merci de nous avoir appelés. Au revoir, bonne journée." Ne posez aucune autre question.`,
+        },
+      });
+    }, 80);
+
+    return true;
+  }
+
   function schedulePlaybackMark() {
     if (!state.streamSid || !state.responseHadAudio || state.playbackMark) return;
  
@@ -1292,7 +1735,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
         speed: 1.10,
         maxOutputTokens: MAX_OUTPUT_TOKENS,
       },
-      "Connexion OpenAI Realtime ouverte - V2.8 FLUID FLOW"
+      "Connexion OpenAI Realtime ouverte - V2.9 SECTOR PATCH"
     );
  
     // Important : aucune session Realtime n'est configurée avant le message
@@ -1408,6 +1851,87 @@ app.get("/media-stream", { websocket: true }, (socket) => {
   return;
 }
  
+          // V2.9 : statut client explicite, indépendant du raisonnement du modèle.
+          if (state.awaitingCustomerStatus || state.customerStatus === null) {
+            const customerStatus = extractCustomerStatusAnswer(callerMessage);
+            if (customerStatus) {
+              state.customerStatus = customerStatus;
+              state.awaitingCustomerStatus = false;
+
+              addSystemContext(
+                customerStatus === "existing"
+                  ? "STATUT CLIENT CONFIRMÉ PAR L'APPELANT : client PC Froid existant. Ne bloquez jamais cet appel sur la zone géographique."
+                  : "STATUT CLIENT CONFIRMÉ PAR L'APPELANT : nouveau client. La ville doit être contrôlée avant de poursuivre inutilement une demande hors secteur."
+              );
+
+              app.log.info(
+                { customerStatus },
+                "Statut client confirmé par l'appelant"
+              );
+            }
+          }
+
+          // V2.9 : une ville demandée ou corrigée vient de la transcription client.
+          // Une correction remplace immédiatement l'ancienne ville.
+          if (state.awaitingCity || callerCorrectsCity(callerMessage)) {
+            const cityCandidate = extractCityCandidate(callerMessage);
+
+            if (cityCandidate) {
+              const previousCity = state.interventionCity;
+              const isCorrection =
+                callerCorrectsCity(callerMessage) ||
+                (previousCity &&
+                  normalizeCityKey(previousCity) !== normalizeCityKey(cityCandidate));
+
+              state.interventionCity = cityCandidate;
+              state.awaitingCity = false;
+              state.cityZoneStatus = classifyServiceArea(cityCandidate);
+
+              if (isCorrection && previousCity) {
+                addSystemContext(
+                  `CORRECTION DE VILLE : ignorez définitivement l'ancienne ville « ${previousCity} ». La seule ville correcte est maintenant « ${cityCandidate} ». Ne demandez pas au client de choisir entre les deux.`
+                );
+              }
+
+              if (state.customerStatus === "existing") {
+                addSystemContext(
+                  `VILLE D'INTERVENTION : ${cityCandidate}. CLIENT EXISTANT : ne faites aucun refus automatique lié au secteur.`
+                );
+              } else if (state.customerStatus === "new") {
+                if (state.cityZoneStatus === "in") {
+                  addSystemContext(
+                    `ZONE CONFIRMÉE : ${cityCandidate} est dans le secteur accepté pour un nouveau client. Poursuivez normalement.`
+                  );
+                } else if (state.cityZoneStatus === "out") {
+                  addSystemContext(
+                    `HORS SECTEUR : ${cityCandidate} est clairement hors secteur pour un nouveau client. Ne demandez ni adresse complète ni numéro de rappel et ne transmettez pas cette intervention à Christophe.`
+                  );
+                  sendOutOfSectorClosing(cityCandidate);
+                  return;
+                } else {
+                  addSystemContext(
+                    `ZONE À VÉRIFIER : la ville indiquée est « ${cityCandidate} ». Ne l'inventez pas et ne la remplacez pas. Le serveur ne peut pas confirmer automatiquement la zone : indiquez seulement que Christophe vérifiera si l'intervention est possible.`
+                  );
+                }
+              } else {
+                addSystemContext(
+                  `VILLE D'INTERVENTION ENTENDUE : ${cityCandidate}. Le statut client n'est pas encore confirmé : ne refusez pas sur la zone avant de savoir si la personne est déjà cliente PC Froid.`
+                );
+              }
+
+              app.log.info(
+                {
+                  city: cityCandidate,
+                  previousCity,
+                  zone: state.cityZoneStatus,
+                  customerStatus: state.customerStatus,
+                  corrected: Boolean(isCorrection),
+                },
+                "Ville d'intervention enregistrée - V2.9"
+              );
+            }
+          }
+
           if (!state.identityKnown) {
             let detectedName = null;
 
@@ -1542,6 +2066,14 @@ if (
           state.awaitingIdentity = true;
         }
 
+        if (assistantAskedForCustomerStatus(assistantText)) {
+          state.awaitingCustomerStatus = true;
+        }
+
+        if (assistantAskedForCity(assistantText)) {
+          state.awaitingCity = true;
+        }
+
         if (assistantAskedFinalQuestion(assistantText) && !state.finalQuestionAsked) {
           state.finalQuestionAsked = true;
           addSystemContext(
@@ -1585,7 +2117,7 @@ if (
             greetingChunks: state.greetingAudioChunks,
             diagnostics: responseDiagnostics,
           },
-          "Réponse OpenAI terminée - V2.8 FLUID FLOW"
+          "Réponse OpenAI terminée - V2.9 SECTOR PATCH"
         );
  
         if (event.response?.status !== "completed") {
@@ -1681,7 +2213,7 @@ if (
             eventId: event.event_id || null,
             phase: state.phase,
           },
-          "Erreur OpenAI Realtime - V2.8 FLUID FLOW"
+          "Erreur OpenAI Realtime - V2.9 SECTOR PATCH"
         );
       }
     } catch (error) {
@@ -1828,4 +2360,4 @@ try {
   app.log.error(error);
   process.exit(1);
 }
-// END TOM V2.8 DEFINITIVE - FICHIER COMPLET
+// END TOM V2.9 SECTOR PATCH - FICHIER COMPLET
