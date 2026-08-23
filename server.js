@@ -2002,7 +2002,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
 }
  
           // V2.9 : statut client explicite, indépendant du raisonnement du modèle.
-          if (state.awaitingCustomerStatus) {
+         if (state.flowStage === "customer_status") {
             const customerStatus = extractCustomerStatusAnswer(callerMessage);
             if (customerStatus) {
               state.customerStatus = customerStatus;
