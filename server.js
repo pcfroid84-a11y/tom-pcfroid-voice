@@ -1722,9 +1722,17 @@ state.pendingConversationResponse = false;
             break;
           }
  
-          if (message.mark?.name === state.playbackMark) {
-            state.playbackMark = null;
-          }
+         if (message.mark?.name === state.playbackMark) {
+  state.playbackMark = null;
+
+  if (state.pendingConversationResponse && !state.closed) {
+    state.pendingConversationResponse = false;
+
+    setTimeout(() => {
+      requestConversationResponse("pending-after-playback");
+    }, 80);
+  }
+}
  
           if (message.mark?.name === state.hangupMark) {
             if (state.hangupFallback) {
