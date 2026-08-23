@@ -730,6 +730,7 @@ app.all("/incoming-call", async (request, reply) => {
  
   const twiml = `<?xml version="1.0" encoding="UTF-8"?>
 <Response>
+  <Pause length="4"/>
   <Connect>
     <Stream url="wss://${host}/media-stream">
       <Parameter name="callerPhone" value="${callerPhone}" />
