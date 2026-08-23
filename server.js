@@ -1200,6 +1200,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
     greetingPlaybackFallback: null,
     conversationModeEnabled: false,
     phase: "boot",
+   flowStage: "need",
     assistantSpeaking: false,
     responseActive: false,
     pendingConversationResponse: false,
