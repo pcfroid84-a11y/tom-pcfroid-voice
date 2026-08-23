@@ -1557,6 +1557,21 @@ app.get("/media-stream", { websocket: true }, (socket) => {
     }
   }
 
+  function setFlowStage(nextStage, reason = "") {
+  if (!nextStage || state.flowStage === nextStage) return;
+
+  const previousStage = state.flowStage;
+  state.flowStage = nextStage;
+
+  app.log.info(
+    {
+      previousStage,
+      nextStage,
+      reason,
+    },
+    "Étape du parcours Tom mise à jour"
+  );
+}
   function getFlowLockResponse() {
     if (
       state.outOfCompetenceFlow ||
