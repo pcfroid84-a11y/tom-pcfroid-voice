@@ -24,7 +24,7 @@ const TRANSCRIBE_MODEL =
 const VAD_THRESHOLD = Number(process.env.OPENAI_VAD_THRESHOLD || 0.65);
 const VAD_SILENCE_MS = Number(process.env.OPENAI_VAD_SILENCE_MS || 900);
 const VAD_PREFIX_MS = Number(process.env.OPENAI_VAD_PREFIX_MS || 300);
-const MAX_OUTPUT_TOKENS = Number(process.env.OPENAI_MAX_OUTPUT_TOKENS || 320);
+const MAX_OUTPUT_TOKENS = Number(process.env.OPENAI_MAX_OUTPUT_TOKENS || 800);
  
 
 // NOTE V2.8 DEFINITIVE : le SMS récapitulatif doit être déclenché côté n8n après l’appel.
