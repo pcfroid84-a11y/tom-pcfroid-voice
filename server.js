@@ -1623,6 +1623,19 @@ app.get("/media-stream", { websocket: true }, (socket) => {
           'Nouveau client : la ville doit être contrôlée avant toute qualification technique ou demande d’adresse complète. Demandez exactement et uniquement : "Dans quelle ville se trouve l’installation ?" Puis arrêtez-vous et attendez la réponse.',
       };
     }
+       if (
+      state.identityKnown &&
+      (
+        state.customerStatus === "existing" ||
+        (
+          state.customerStatus === "new" &&
+          state.interventionCity &&
+          state.cityZoneStatus !== "out"
+        )
+      )
+    ) {
+      setFlowStage("qualification", "coordonnées préalables validées");
+    }
 
     return null;
   }
