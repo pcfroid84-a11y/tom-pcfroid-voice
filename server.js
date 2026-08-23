@@ -1,4 +1,4 @@
-// TOM PC FROID VOICE - V2.9 SECTOR PATCH - base V2.8 figée + contrôle secteur nouveau client + correction de ville
+// TOM PC FROID VOICE - V2.10 FLOW LOCK - base V2.9 figée + parcours verrouillé + raccrochage sécurisé
 import Fastify from "fastify";
 import websocket from "@fastify/websocket";
 import formbody from "@fastify/formbody";
@@ -840,6 +840,40 @@ function isInitialFragmentMessage(text) {
 
   return false;
 }
+
+function isPersonalQuestionMessage(text) {
+  const normalized = normalizeText(text);
+  if (!normalized) return false;
+
+  return [
+    "qui êtes-vous",
+    "qui etes-vous",
+    "qui etes vous",
+    "qui êtes vous",
+    "vous êtes un robot",
+    "vous etes un robot",
+    "vous êtes qui",
+    "vous etes qui",
+    "depuis combien de temps",
+  ].some((phrase) => normalized.includes(phrase));
+}
+
+function isClearlyOutOfCompetenceRequest(text) {
+  const normalized = normalizeText(text);
+  if (!normalized) return false;
+
+  return [
+    "friteuse",
+    "four",
+    "plaque de cuisson",
+    "plaques de cuisson",
+    "piano de cuisson",
+    "grill",
+    "salamandre",
+    "hotte de cuisine",
+    "extraction de cuisine",
+  ].some((term) => normalized.includes(term));
+}
  
 function cleanIdentityName(value) {
   let candidate = String(value || "")
@@ -1172,6 +1206,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
     // V2.6 : le serveur ne met plus en file une réponse pendant que Tom parle.
     // Une nouvelle réponse ne part qu’après une transcription client terminée.
     lastCallerTranscriptAt: 0,
+    lastCallerMessage: null,
     lastConversationResponseAt: 0,
     responseHadAudio: false,
     playbackMark: null,
@@ -1192,6 +1227,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
     finalQuestionAsked: false,
     closingStarted: false,
     explicitEquipment: null,
+    outOfCompetenceFlow: false,
     pendingHangup: false,
     hangupMark: null,
    closingStarted: false,
@@ -1519,6 +1555,53 @@ app.get("/media-stream", { websocket: true }, (socket) => {
       state.n8nLoading = false;
     }
   }
+
+  function getFlowLockResponse() {
+    if (
+      state.outOfCompetenceFlow ||
+      isPersonalQuestionMessage(state.lastCallerMessage || "")
+    ) {
+      return null;
+    }
+
+    if (state.customerStatus === null) {
+      return {
+        stage: "customer-status",
+        instructions:
+          'Respectez impérativement le parcours PC Froid. Si le client demande explicitement si PC Froid réalise ce service, répondez clairement en une phrase courte, sans inventer. Sinon, ne reformulez pas le symptôme. Ne posez aucune question technique. La seule question autorisée ensuite est exactement : "Est-ce que vous êtes déjà client chez P C Froid ?" Puis arrêtez-vous et attendez la réponse.',
+      };
+    }
+
+    if (state.customerStatus === "existing" && !state.identityKnown) {
+      return {
+        stage: "existing-identity",
+        instructions:
+          'Client PC Froid existant. Ne posez aucune question technique pour le moment. Demandez exactement et uniquement : "À quel nom est le dossier ?" Puis arrêtez-vous et attendez la réponse.',
+      };
+    }
+
+    if (state.customerStatus === "new" && !state.identityKnown) {
+      return {
+        stage: "new-identity",
+        instructions:
+          'Nouveau client. Ne posez aucune question technique pour le moment. Demandez exactement et uniquement : "Pouvez-vous me donner votre prénom et votre nom, s’il vous plaît ?" Puis arrêtez-vous et attendez la réponse.',
+      };
+    }
+
+    if (
+      state.customerStatus === "new" &&
+      state.identityKnown &&
+      !state.interventionCity
+    ) {
+      return {
+        stage: "new-city",
+        instructions:
+          'Nouveau client : la ville doit être contrôlée avant toute qualification technique ou demande d’adresse complète. Demandez exactement et uniquement : "Dans quelle ville se trouve l’installation ?" Puis arrêtez-vous et attendez la réponse.',
+      };
+    }
+
+    return null;
+  }
  
   function requestConversationResponse(reason = "caller-turn") {
     if (state.closed || !state.conversationModeEnabled) return false;
@@ -1540,13 +1623,34 @@ app.get("/media-stream", { websocket: true }, (socket) => {
   );
   return false;
 }
+
+    const flowLock = getFlowLockResponse();
+
+    if (flowLock?.stage === "customer-status") {
+      state.awaitingCustomerStatus = true;
+    } else if (
+      flowLock?.stage === "existing-identity" ||
+      flowLock?.stage === "new-identity"
+    ) {
+      state.awaitingIdentity = true;
+    } else if (flowLock?.stage === "new-city") {
+      state.awaitingCity = true;
+    }
  
     // Une seule réponse contrôlée par transcription client terminée.
     state.lastConversationResponseAt = Date.now();
-    app.log.info({ reason }, "Création contrôlée d'une réponse conversationnelle - V2.9");
+    app.log.info(
+      { reason, flowStage: flowLock?.stage || null },
+      "Création contrôlée d'une réponse conversationnelle - V2.10 FLOW LOCK"
+    );
     return sendToOpenAI({
       type: "response.create",
-      response: { output_modalities: ["audio"] },
+      response: {
+        output_modalities: ["audio"],
+        ...(flowLock?.instructions
+          ? { instructions: flowLock.instructions }
+          : {}),
+      },
     });
   }
  
@@ -1688,7 +1792,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
         app.log.warn("Raccrochage de secours après attente du mark Twilio");
         socket.close(1000, "call-complete");
       }
-    }, 6000);
+    }, 20000);
   }
  
   function buildResponseDiagnostics(response) {
@@ -1735,7 +1839,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
         speed: 1.10,
         maxOutputTokens: MAX_OUTPUT_TOKENS,
       },
-      "Connexion OpenAI Realtime ouverte - V2.9 SECTOR PATCH"
+      "Connexion OpenAI Realtime ouverte - V2.10 FLOW LOCK"
     );
  
     // Important : aucune session Realtime n'est configurée avant le message
@@ -1804,10 +1908,19 @@ app.get("/media-stream", { websocket: true }, (socket) => {
             app.log.info({ callerMessage }, "Transcription ignorée : clôture déjà engagée");
             return;
           }
+
+          state.lastCallerMessage = callerMessage;
+
+          if (isClearlyOutOfCompetenceRequest(callerMessage)) {
+            state.outOfCompetenceFlow = true;
+          }
  
           const detectedEquipment = detectExplicitEquipment(callerMessage);
           if (detectedEquipment && state.explicitEquipment !== detectedEquipment) {
             state.explicitEquipment = detectedEquipment;
+            if (!isClearlyOutOfCompetenceRequest(callerMessage)) {
+              state.outOfCompetenceFlow = false;
+            }
             addSystemContext(
               `ÉQUIPEMENT EXPLICITEMENT CITÉ PAR LE CLIENT : ${detectedEquipment}. Restez sur cet équipement. Ne le remplacez pas par une climatisation ou un autre appareil sans que le client ne change clairement de sujet.`
             );
@@ -2117,7 +2230,7 @@ if (
             greetingChunks: state.greetingAudioChunks,
             diagnostics: responseDiagnostics,
           },
-          "Réponse OpenAI terminée - V2.9 SECTOR PATCH"
+          "Réponse OpenAI terminée - V2.10 FLOW LOCK"
         );
  
         if (event.response?.status !== "completed") {
@@ -2213,7 +2326,7 @@ if (
             eventId: event.event_id || null,
             phase: state.phase,
           },
-          "Erreur OpenAI Realtime - V2.9 SECTOR PATCH"
+          "Erreur OpenAI Realtime - V2.10 FLOW LOCK"
         );
       }
     } catch (error) {
@@ -2360,4 +2473,4 @@ try {
   app.log.error(error);
   process.exit(1);
 }
-// END TOM V2.9 SECTOR PATCH - FICHIER COMPLET
+// END TOM V2.10 FLOW LOCK - FICHIER COMPLET
