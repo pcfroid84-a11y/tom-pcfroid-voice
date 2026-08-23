@@ -1517,7 +1517,25 @@ if (
           scheduleGreetingPlaybackMark();
         }
       }
- 
+
+     else {
+  // La génération audio de Tom est terminée.
+  // On place immédiatement un mark Twilio pour savoir
+  // quand la lecture réelle dans le téléphone est finie.
+  state.assistantSpeaking = false;
+  schedulePlaybackMark();
+
+  app.log.info(
+    {
+      pendingConversationResponse: state.pendingConversationResponse,
+      responseActive: state.responseActive,
+      playbackMark: state.playbackMark,
+    },
+    "Audio conversation terminé - attente fin lecture Twilio"
+  );
+}
+     }
+   
       if (event.type === "response.output_audio_transcript.done") {
         const assistantText = event.transcript?.trim() || "";
  
