@@ -1714,6 +1714,9 @@ if (
             state.greetingAudioChunks = 0;
             state.greetingAudioBytesApprox = 0;
             app.log.info("Accueil entièrement joué par Twilio");
+           state.responseActive = false;
+state.assistantSpeaking = false;
+state.pendingConversationResponse = false;
             enableConversationMode("greeting-mark-confirmed");
             break;
           }
