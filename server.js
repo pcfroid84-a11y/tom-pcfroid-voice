@@ -1133,7 +1133,6 @@ app.get("/media-stream", { websocket: true }, (socket) => {
 }
  
     // Une seule réponse contrôlée par transcription client terminée.
-    state.pendingConversationResponse = false;
     state.lastConversationResponseAt = Date.now();
     app.log.info({ reason }, "Création contrôlée d'une réponse conversationnelle - V2.8");
     return sendToOpenAI({
