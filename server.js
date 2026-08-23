@@ -400,8 +400,8 @@ function cleanIdentityName(value) {
   const words = candidate.split(/\s+/).filter(Boolean);
   if (words.length < 1 || words.length > 4) return null;
   if (candidate.length < 2 || candidate.length > 60) return null;
-  if (!words.every((word) => /^[\p{L}\'’ -]+$/u.test(word))) return null;
-
+ if (!words.every((word) => /^[\p{L}'’ -]+$/u.test(word))) return null;
+ 
   const normalizedWords = words.map((word) => normalizeText(word));
   if (normalizedWords.some((word) => NON_NAME_WORDS.has(word))) return null;
 
