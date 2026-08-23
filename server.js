@@ -1374,18 +1374,39 @@ app.get("/media-stream", { websocket: true }, (socket) => {
             );
           }
  
-          if (callerIsClosing(callerMessage)) {
-            state.callerRequestedEnd = true;
-            app.log.info({ callerMessage }, "Le client souhaite terminer l'appel");
- 
-            if (state.identityKnown) {
-              forceShortClosingResponse();
-            } else {
-              cancelActiveResponse();
-              requestIdentityRecovery();
-            }
-            return;
-          }
+         if (callerIsClosing(callerMessage)) {
+  state.callerRequestedEnd = true;
+
+  app.log.info(
+    { callerMessage },
+    "Le client souhaite terminer l'appel"
+  );
+
+  // Si le client veut partir, on ne lui impose jamais
+  // une prise d'identité ou une nouvelle question.
+  if (state.identityKnown) {
+    forceShortClosingResponse();
+  } else {
+    state.closingStarted = true;
+    state.conversationModeEnabled = false;
+    state.pendingHangup = false;
+
+    cancelActiveResponse();
+
+    setTimeout(() => {
+      sendToOpenAI({
+        type: "response.create",
+        response: {
+          output_modalities: ["audio"],
+          instructions:
+            'Répondez exactement et uniquement : "Merci de nous avoir appelés. Au revoir, bonne journée." Ne posez aucune question et ne demandez pas l’identité.'
+        }
+      });
+    }, 80);
+  }
+
+  return;
+}
  
           if (!state.identityKnown) {
             let detectedName = null;
