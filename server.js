@@ -1636,6 +1636,7 @@ if (
           schedulePlaybackMark();
         }
       }
+       }
  
       if (event.type === "error") {
         app.log.error(
