@@ -1411,6 +1411,20 @@ app.get("/media-stream", { websocket: true }, (socket) => {
             return;
           }
 
+         // Au tout début de la conversation, ignorer les petits fragments
+// comme « oui bonjour », « allo », « je vous appelle... ».
+// Tom attend la vraie demande avant de répondre.
+if (
+  state.lastConversationResponseAt === 0 &&
+  !isUsefulCallerMessage(callerMessage)
+) {
+  app.log.info(
+    { callerMessage },
+    "Petit fragment initial ignoré - attente de la demande réelle"
+  );
+  return;
+}
+         
           void loadN8nContext(callerMessage);
           requestConversationResponse("transcription-completed");
         }
