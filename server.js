@@ -521,7 +521,9 @@ function assistantAskedFinalQuestion(text) {
 
 function assistantIsClosing(text) {
   const normalized = normalizeText(text);
-  return /(?:bonne journée(?: à vous)?|bonne soirée(?: à vous)?|au revoir|à bientôt)$/.test(
+  if (!normalized) return false;
+
+  return /(?:au revoir|bonne journée|bonne soirée|bonne continuation|à bientôt)(?:\s+à vous)?(?:\s+et\s+(?:bonne journée|bonne soirée|bonne continuation))?$/.test(
     normalized
   );
 }
@@ -529,6 +531,36 @@ function assistantIsClosing(text) {
 function callerIsClosing(text) {
   const normalized = normalizeText(text);
   if (!normalized) return false;
+
+  // Formules explicites de départ
+  if (
+    /(?:au revoir|bonne journée|bonne soirée|à bientôt)$/.test(normalized)
+  ) {
+    return true;
+  }
+
+  // Le client indique clairement qu'il veut terminer
+  return [
+    "je vous laisse",
+    "c'est tout merci",
+    "c est tout merci",
+    "tant pis merci",
+    "tant pis c'est pas grave",
+    "tant pis c est pas grave",
+    "non ça ira merci",
+    "non ca ira merci",
+    "ça ira merci",
+    "ca ira merci",
+    "je vais voir ailleurs",
+    "je vais regarder ailleurs",
+    "je vais appeler quelqu'un d'autre",
+    "je vais appeler quelqu un d autre"
+  ].some(
+    (phrase) =>
+      normalized === phrase ||
+      normalized.endsWith(` ${phrase}`)
+  );
+}
  
   return [
     "au revoir",
