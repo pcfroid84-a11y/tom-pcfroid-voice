@@ -584,6 +584,8 @@ app.get("/", async () => ({
 }));
  
 app.all("/incoming-call", async (request, reply) => {
+ await new Promise((resolve) => setTimeout(resolve, 3000));
+ 
   const host = request.headers["x-forwarded-host"] || request.headers.host;
   const callerPhone = xmlEscape(request.body?.From || "");
   const calledPhone = xmlEscape(request.body?.To || "");
