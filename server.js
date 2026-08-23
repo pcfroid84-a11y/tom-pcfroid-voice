@@ -1615,6 +1615,8 @@ app.get("/media-stream", { websocket: true }, (socket) => {
       state.identityKnown &&
       !state.interventionCity
     ) {
+     setFlowStage("city", "ville nouveau client requise");
+     
       return {
         stage: "new-city",
         instructions:
