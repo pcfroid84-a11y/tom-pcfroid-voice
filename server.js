@@ -542,6 +542,16 @@ function callerIsClosing(text) {
     "je vous laisse",
     "c'est tout merci",
     "c est tout merci",
+   "tant pis",
+"tant pis merci",
+"merci beaucoup",
+"non merci",
+"non ça ira",
+"non ca ira",
+"ça ira merci",
+"ca ira merci",
+"je vais voir ailleurs",
+"je vais regarder ailleurs",
   ].some((phrase) =>
     normalized === phrase || normalized.endsWith(` ${phrase}`)
   );
