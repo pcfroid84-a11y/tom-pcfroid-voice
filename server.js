@@ -1124,13 +1124,13 @@ app.get("/media-stream", { websocket: true }, (socket) => {
     // V2.6 : si Tom parle encore, on ne programme PAS une seconde réponse.
     // Cela évite l’effet « Tom pose la question puis se répond tout seul ».
     if (state.responseActive || state.assistantSpeaking) {
-      state.pendingConversationResponse = false;
-      app.log.info(
-        { reason },
-        "Tour client ignoré pendant une réponse active - V2.8 anti-auto-réponse"
-      );
-      return false;
-    }
+  state.pendingConversationResponse = true;
+  app.log.info(
+    { reason },
+    "Tour client reçu pendant une réponse active - réponse mise en attente"
+  );
+  return false;
+}
  
     // Une seule réponse contrôlée par transcription client terminée.
     state.pendingConversationResponse = false;
