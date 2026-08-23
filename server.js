@@ -1640,6 +1640,22 @@ if (
           state.responseHadAudio = false;
           return;
         }
+       if (
+  state.pendingConversationResponse &&
+  !state.closed &&
+  !state.closingStarted &&
+  !state.pendingHangup &&
+  !state.callerRequestedEnd &&
+  !state.playbackMark
+) {
+  state.pendingConversationResponse = false;
+
+  setTimeout(() => {
+    requestConversationResponse("pending-after-response-done");
+  }, 80);
+
+  return;
+}
  
         // V2.6 : aucune réponse différée automatique après response.done.
         // Tom attend obligatoirement une nouvelle transcription client terminée.
