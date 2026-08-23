@@ -585,33 +585,7 @@ function callerIsClosing(text) {
   );
 }
  
-  return [
-    "au revoir",
-    "bonne journée",
-    "bonne soirée",
-    "à bientôt",
-    "a bientôt",
-    "merci au revoir",
-    "merci bonne journée",
-    "merci bonne soirée",
-    "je vous laisse",
-    "c'est tout merci",
-    "c est tout merci",
-   "tant pis",
-"tant pis merci",
-"merci beaucoup",
-"non merci",
-"non ça ira",
-"non ca ira",
-"ça ira merci",
-"ca ira merci",
-"je vais voir ailleurs",
-"je vais regarder ailleurs",
-  ].some((phrase) =>
-    normalized === phrase || normalized.endsWith(` ${phrase}`)
-  );
-}
- 
+
 function detectExplicitEquipment(text) {
   const normalized = normalizeText(text);
   if (!normalized) return null;
