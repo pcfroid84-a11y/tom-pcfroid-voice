@@ -1581,6 +1581,8 @@ app.get("/media-stream", { websocket: true }, (socket) => {
     }
 
     if (state.customerStatus === null) {
+     setFlowStage("customer_status", "statut client requis");
+     
       return {
         stage: "customer-status",
         instructions:
