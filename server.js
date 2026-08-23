@@ -23,7 +23,7 @@ const TRANSCRIBE_MODEL =
  
 // Réglages anti-bruit : ajustables dans Railway sans modifier le code.
 const VAD_THRESHOLD = Number(process.env.OPENAI_VAD_THRESHOLD || 0.65);
-const VAD_SILENCE_MS = Number(process.env.OPENAI_VAD_SILENCE_MS || 650);
+const VAD_SILENCE_MS = Number(process.env.OPENAI_VAD_SILENCE_MS || 900);
 const VAD_PREFIX_MS = Number(process.env.OPENAI_VAD_PREFIX_MS || 300);
  
  
@@ -1252,8 +1252,22 @@ app.get("/media-stream", { websocket: true }, (socket) => {
             }
           }
  
-          void loadN8nContext(callerMessage);
-          requestConversationResponse("transcription-completed");
+         // Au tout début de la conversation, ignorer les petits fragments
+// comme « oui bonjour », « je vous appelle... ».
+// Après le premier vrai échange, les réponses courtes restent autorisées.
+if (
+  state.lastConversationResponseAt === 0 &&
+  !isUsefulCallerMessage(callerMessage)
+) {
+  app.log.info(
+    { callerMessage },
+    "Petit fragment initial ignoré - attente de la demande réelle"
+  );
+  return;
+}
+
+void loadN8nContext(callerMessage);
+requestConversationResponse("transcription-completed");
         }
       }
  
