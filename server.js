@@ -561,31 +561,7 @@ function callerIsClosing(text) {
       normalized.endsWith(` ${phrase}`)
   );
 }
-
-  // Le client indique clairement qu'il veut terminer
-  return [
-    "je vous laisse",
-    "c'est tout merci",
-    "c est tout merci",
-    "tant pis merci",
-    "tant pis c'est pas grave",
-    "tant pis c est pas grave",
-    "non ça ira merci",
-    "non ca ira merci",
-    "ça ira merci",
-    "ca ira merci",
-    "je vais voir ailleurs",
-    "je vais regarder ailleurs",
-    "je vais appeler quelqu'un d'autre",
-    "je vais appeler quelqu un d autre"
-  ].some(
-    (phrase) =>
-      normalized === phrase ||
-      normalized.endsWith(` ${phrase}`)
-  );
-}
  
-
 function detectExplicitEquipment(text) {
   const normalized = normalizeText(text);
   if (!normalized) return null;
