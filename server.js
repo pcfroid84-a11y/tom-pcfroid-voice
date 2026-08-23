@@ -1178,6 +1178,10 @@ app.get("/media-stream", { websocket: true }, (socket) => {
   }
  
   function forceShortClosingResponse() {
+   if (state.closingStarted) {
+  app.log.info("Clôture déjà lancée : aucune deuxième formule de fin");
+  return;
+}
     if (!state.identityKnown) {
       requestIdentityRecovery();
       return;
