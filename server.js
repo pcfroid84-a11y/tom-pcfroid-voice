@@ -1533,22 +1533,23 @@ if (
           app.log.info("Question finale marquée comme déjà posée");
         }
  
-        if (assistantIsClosing(assistantText)) {
-          if (state.identityKnown) {
-            state.closingStarted = true;
-            state.conversationModeEnabled = false;
-            state.pendingHangup = true;
-            app.log.info(
-              { assistantText },
-              "Fin d'appel détectée ; conversation verrouillée en attente de fin audio"
-            );
-          } else {
-            state.pendingHangup = false;
-            state.identityRecoveryNeeded = true;
-            app.log.info("Fin refusée : identité client inconnue");
-          }
-        }
-      }
+       if (assistantIsClosing(assistantText)) {
+  if (state.identityKnown || state.callerRequestedEnd) {
+    state.closingStarted = true;
+    state.conversationModeEnabled = false;
+    state.pendingHangup = true;
+    state.identityRecoveryNeeded = false;
+
+    app.log.info(
+      { assistantText },
+      "Fin d'appel détectée ; conversation verrouillée en attente de fin audio"
+    );
+  } else {
+    state.pendingHangup = false;
+    state.identityRecoveryNeeded = true;
+    app.log.info("Fin refusée : identité client inconnue");
+  }
+}
  
       if (event.type === "response.done") {
         state.responseActive = false;
