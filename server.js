@@ -1625,7 +1625,6 @@ if (
  
         // V2.6 : aucune réponse différée automatique après response.done.
         // Tom attend obligatoirement une nouvelle transcription client terminée.
-        state.pendingConversationResponse = false;
  
         if (state.identityRecoveryNeeded && !state.identityKnown) {
           state.identityRecoveryNeeded = false;
