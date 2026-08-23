@@ -1723,7 +1723,12 @@ state.pendingConversationResponse = false;
          if (message.mark?.name === state.playbackMark) {
   state.playbackMark = null;
 
-  if (state.pendingConversationResponse && !state.closed) {
+  if (
+  state.pendingConversationResponse &&
+  !state.closed &&
+  !state.closingStarted &&
+  !state.pendingHangup
+) {
     state.pendingConversationResponse = false;
 
     setTimeout(() => {
