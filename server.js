@@ -1591,6 +1591,8 @@ app.get("/media-stream", { websocket: true }, (socket) => {
     }
 
     if (state.customerStatus === "existing" && !state.identityKnown) {
+     setFlowStage("identity", "identité client existant requise");
+     
       return {
         stage: "existing-identity",
         instructions:
@@ -1599,6 +1601,8 @@ app.get("/media-stream", { websocket: true }, (socket) => {
     }
 
     if (state.customerStatus === "new" && !state.identityKnown) {
+     setFlowStage("identity", "identité nouveau client requise");
+     
       return {
         stage: "new-identity",
         instructions:
