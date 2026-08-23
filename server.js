@@ -417,7 +417,7 @@ function extractNameCandidate(text) {
   if (!raw) return null;
 
   const strongPatterns = [
-    /^(?:oui[\s,]+)?(?:bonjour[\s,]+)?(?:je m[\'’]appelle|moi c[\'’]est|mon nom c[\'’]est|je suis|c[\'’]est)\s+([^.!?;:,]+)(?:[.!?;:,]|$)/iu,
+   /^(?:oui[\s,]+)?(?:bonjour[\s,]+)?(?:je m['’]appelle|moi c['’]est|mon nom c['’]est|je suis|c['’]est)\s+([^.!?;:,]+)(?:[.!?;:,]|$)/iu,
     /^(?:bonjour[\s,]+)?(?:monsieur|madame|mme|mr|m)\.?\s+([^.!?;:,]+)(?:[.!?;:,]|$)/iu,
   ];
 
