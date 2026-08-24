@@ -1690,6 +1690,14 @@ if (customerContext.known) {
       'Ne posez plus aucune question technique. Demandez exactement et uniquement : "On peut vous rappeler sur le numéro avec lequel vous appelez ?" Puis arrêtez-vous et attendez la réponse.',
   };
 }
+
+   if (state.flowStage === "callback_number") {
+  return {
+    stage: "callback-number",
+    instructions:
+      'Demandez exactement et uniquement : "Quel numéro je note pour vous rappeler ?" Puis arrêtez-vous et attendez la réponse. Ne répétez aucun numéro inventé.',
+  };
+}
    
     return null;
   }
