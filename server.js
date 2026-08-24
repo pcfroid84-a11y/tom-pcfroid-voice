@@ -2149,6 +2149,44 @@ if (customerContext.known) {
             }
           }
 
+         if (state.flowStage === "address") {
+  const normalizedAddressAnswer = normalizeText(callerMessage);
+
+  if (
+    state.knownCustomerAddress &&
+    (normalizedAddressAnswer === "oui" ||
+      normalizedAddressAnswer.startsWith("oui "))
+  ) {
+    state.interventionAddress = state.knownCustomerAddress;
+
+    setFlowStage(
+      "callback",
+      "adresse habituelle confirmée"
+    );
+  } else if (
+    state.knownCustomerAddress &&
+    (normalizedAddressAnswer === "non" ||
+      normalizedAddressAnswer.startsWith("non "))
+  ) {
+    state.knownCustomerAddress = null;
+
+    addSystemContext(
+      "L’appelant a indiqué que l’intervention n’est pas à son adresse habituelle. Demandez uniquement la nouvelle adresse d’intervention."
+    );
+  } else if (!state.knownCustomerAddress) {
+    state.interventionAddress = callerMessage;
+
+    setFlowStage(
+      "callback",
+      "adresse d’intervention enregistrée"
+    );
+
+    addSystemContext(
+      `ADRESSE D'INTERVENTION FOURNIE PAR L'APPELANT : ${callerMessage}. Ne modifiez aucun numéro et ne réinventez pas l'adresse.`
+    );
+  }
+}
+         
           if (!state.identityKnown) {
             let detectedName = null;
 
