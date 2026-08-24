@@ -1652,6 +1652,24 @@ app.get("/media-stream", { websocket: true }, (socket) => {
       setFlowStage("qualification", "coordonnées préalables validées");
     }
 
+   if (state.flowStage === "qualification") {
+  const maxQualificationQuestions =
+    state.explicitEquipment === "chambre froide" ? 4 : 2;
+
+  if (state.qualificationQuestionCount >= maxQualificationQuestions) {
+    setFlowStage(
+      "address",
+      "nombre maximal de questions de qualification atteint"
+    );
+
+    return {
+      stage: "address",
+      instructions:
+        "La qualification est terminée. Ne posez plus aucune question technique. Passez maintenant à l’adresse d’intervention. Pour un client existant dont une adresse habituelle est connue dans le contexte, demandez si l’intervention est à la même adresse que d’habitude. Sinon, demandez uniquement l’adresse d’intervention. Une seule question puis attendez la réponse.",
+    };
+  }
+}
+   
     return null;
   }
  
