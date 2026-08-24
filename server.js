@@ -1556,16 +1556,9 @@ callbackPhone: null,
      const customerContext = extractCustomerContext(context);
 
 if (customerContext.known) {
-  state.customerStatus = "existing";
-  state.awaitingCustomerStatus = false;
-
-  if (customerContext.address) {
-    state.knownCustomerAddress = customerContext.address;
-  }
-
-  if (customerContext.name) {
-    setIdentityKnown(customerContext.name, "n8n");
-  }
+  addSystemContext(
+    "Le numéro appelant correspond à un dossier connu, mais cela ne confirme ni le statut client déclaré pendant cet appel ni l’identité de la personne. Respectez strictement le parcours en cours. Ne changez pas automatiquement le statut client et ne considérez pas automatiquement le nom du dossier comme l’identité de l’appelant."
+  );
 }
  
       app.log.info(
