@@ -1707,6 +1707,14 @@ if (state.flowStage === "final_question") {
   };
 }
 
+   if (state.flowStage === "closing") {
+  return {
+    stage: "closing",
+    instructions:
+      'Si l’appelant vient de poser une dernière question, répondez-y brièvement et clairement. Ensuite clôturez une seule fois en indiquant que la demande va être transmise à l’équipe, puis souhaitez une bonne journée. Ne posez plus aucune question.',
+  };
+}
+   
 return null;
    }
  
