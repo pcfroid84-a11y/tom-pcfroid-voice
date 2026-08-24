@@ -2210,6 +2210,29 @@ return null;
     );
   }
 }
+         if (state.flowStage === "callback") {
+  const normalizedCallbackAnswer = normalizeText(callerMessage);
+
+  if (
+    normalizedCallbackAnswer === "oui" ||
+    normalizedCallbackAnswer.startsWith("oui ")
+  ) {
+    state.callbackPhone = state.callerPhone;
+
+    setFlowStage(
+      "final_question",
+      "numéro appelant confirmé pour rappel"
+    );
+  } else if (
+    normalizedCallbackAnswer === "non" ||
+    normalizedCallbackAnswer.startsWith("non ")
+  ) {
+    setFlowStage(
+      "callback_number",
+      "autre numéro de rappel demandé"
+    );
+  }
+}
          
           if (!state.identityKnown) {
             let detectedName = null;
