@@ -2247,6 +2247,20 @@ if (
    
       if (event.type === "response.output_audio_transcript.done") {
         const assistantText = event.transcript?.trim() || "";
+       if (
+  state.flowStage === "qualification" &&
+  assistantText.includes("?")
+) {
+  state.qualificationQuestionCount += 1;
+
+  app.log.info(
+    {
+      qualificationQuestionCount: state.qualificationQuestionCount,
+      assistantText,
+    },
+    "Question de qualification comptabilisée"
+  );
+}
  
         if (assistantAskedForIdentity(assistantText)) {
           state.awaitingIdentity = true;
