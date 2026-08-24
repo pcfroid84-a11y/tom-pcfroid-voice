@@ -2259,6 +2259,16 @@ return null;
     );
   }
 }
+
+         if (
+  state.flowStage === "final_question" &&
+  state.finalQuestionAsked
+) {
+  setFlowStage(
+    "closing",
+    "réponse reçue après la question finale"
+  );
+}
          
           if (!state.identityKnown) {
             let detectedName = null;
