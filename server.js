@@ -1683,6 +1683,18 @@ if (customerContext.known) {
   }
 }
 
+   if (
+  state.flowStage === "address" &&
+  !state.interventionAddress
+) {
+    
+  return {
+    stage: "address",
+    instructions: state.knownCustomerAddress
+      ? 'Ne posez plus aucune question technique. Demandez exactement et uniquement : "Est-ce que l’intervention est à la même adresse que d’habitude ?" Puis arrêtez-vous et attendez la réponse.'
+      : "Ne posez plus aucune question technique. Demandez uniquement l’adresse complète d’intervention. Une seule question puis attendez la réponse.",
+  };
+}
    if (state.flowStage === "callback") {
   return {
     stage: "callback",
