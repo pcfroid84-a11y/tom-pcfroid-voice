@@ -1766,10 +1766,14 @@ return null;
  
     // Une seule réponse contrôlée par transcription client terminée.
     state.lastConversationResponseAt = Date.now();
-    app.log.info(
-      { reason, flowStage: flowLock?.stage || null },
-      "Création contrôlée d'une réponse conversationnelle - V2.10 FLOW LOCK"
-    );
+app.log.info(
+  {
+    reason,
+    flowStage: state.flowStage,
+    flowLockStage: flowLock?.stage || null,
+  },
+  "Création contrôlée d'une réponse conversationnelle - V2.10 FLOW LOCK"
+);
     return sendToOpenAI({
       type: "response.create",
       response: {
