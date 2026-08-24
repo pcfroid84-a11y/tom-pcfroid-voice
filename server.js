@@ -1225,6 +1225,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
     awaitingCity: false,
     interventionCity: null,
     cityZoneStatus: null,
+   qualificationQuestionCount: 0,
     finalQuestionAsked: false,
     closingStarted: false,
     explicitEquipment: null,
