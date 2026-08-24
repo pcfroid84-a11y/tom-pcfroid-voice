@@ -2091,6 +2091,16 @@ app.get("/media-stream", { websocket: true }, (socket) => {
                 );
               }
 
+             if (
+  state.flowStage === "city" &&
+  state.customerStatus === "new" &&
+  state.cityZoneStatus !== "out"
+) {
+  setFlowStage(
+    "qualification",
+    "ville nouveau client enregistrée"
+  );
+}
               app.log.info(
                 {
                   city: cityCandidate,
