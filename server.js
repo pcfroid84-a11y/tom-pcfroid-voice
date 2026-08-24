@@ -2260,6 +2260,24 @@ return null;
   }
 }
 
+         if (state.flowStage === "callback_number") {
+  const callbackPhoneCandidate = callerMessage.replace(/[^\d+]/g, "");
+  const callbackPhoneDigits = callbackPhoneCandidate.replace(/\D/g, "");
+
+  if (callbackPhoneDigits.length >= 10) {
+    state.callbackPhone = callbackPhoneCandidate;
+
+    setFlowStage(
+      "final_question",
+      "autre numéro de rappel enregistré"
+    );
+  } else {
+    addSystemContext(
+      "Le numéro de rappel n’a pas été suffisamment clair. Demandez uniquement au client de répéter son numéro de téléphone, sans inventer ni compléter de chiffres."
+    );
+  }
+}
+         
          if (
   state.flowStage === "final_question" &&
   state.finalQuestionAsked
