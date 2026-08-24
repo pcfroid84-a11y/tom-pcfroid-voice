@@ -2023,7 +2023,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
 
           // V2.9 : une ville demandée ou corrigée vient de la transcription client.
           // Une correction remplace immédiatement l'ancienne ville.
-          if (state.awaitingCity || callerCorrectsCity(callerMessage)) {
+          if (state.flowStage === "city" || callerCorrectsCity(callerMessage)) {
             const cityCandidate = extractCityCandidate(callerMessage);
 
             if (cityCandidate) {
