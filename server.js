@@ -1635,8 +1635,11 @@ app.get("/media-stream", { websocket: true }, (socket) => {
       };
     }
        if (
-      state.identityKnown &&
-      (
+  ["need", "customer_status", "identity", "city", "qualification"].includes(
+    state.flowStage
+  ) &&
+  state.identityKnown &&
+  (
         state.customerStatus === "existing" ||
         (
           state.customerStatus === "new" &&
