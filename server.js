@@ -1553,10 +1553,20 @@ callbackPhone: null,
       state.n8nLoaded = true;
  
       // Si n8n/Supabase renvoie un dossier client confirmé, on injecte aussi l’identité.
-      const customerContext = extractCustomerContext(context);
-      if (customerContext.known && customerContext.name) {
-        setIdentityKnown(customerContext.name, "n8n");
-      }
+     const customerContext = extractCustomerContext(context);
+
+if (customerContext.known) {
+  state.customerStatus = "existing";
+  state.awaitingCustomerStatus = false;
+
+  if (customerContext.address) {
+    state.knownCustomerAddress = customerContext.address;
+  }
+
+  if (customerContext.name) {
+    setIdentityKnown(customerContext.name, "n8n");
+  }
+}
  
       app.log.info(
         {
