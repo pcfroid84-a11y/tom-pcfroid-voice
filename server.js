@@ -2086,7 +2086,7 @@ app.get("/media-stream", { websocket: true }, (socket) => {
             let detectedName = null;
 
             // Si Tom vient de demander l’identité, une réponse nominale courte suffit.
-            if (state.awaitingIdentity) {
+           if (state.flowStage === "identity") {
               detectedName = extractDirectIdentityAnswer(callerMessage);
             }
 
@@ -2097,11 +2097,11 @@ app.get("/media-stream", { websocket: true }, (socket) => {
             }
 
             if (detectedName) {
-              setIdentityKnown(
-                detectedName,
-                state.awaitingIdentity ? "question-identité" : "volontaire"
-              );
-            } else if (state.awaitingIdentity) {
+             setIdentityKnown(
+  detectedName,
+  state.flowStage === "identity" ? "question-identité" : "volontaire"
+);
+            } else if (state.flowStage === "identity") {
               app.log.info(
                 { callerMessage },
                 "Réponse reçue mais identité non validée"
