@@ -2007,6 +2007,17 @@ app.get("/media-stream", { websocket: true }, (socket) => {
             if (customerStatus) {
               state.customerStatus = customerStatus;
               state.awaitingCustomerStatus = false;
+             if (state.identityKnown) {
+  setFlowStage(
+    customerStatus === "new" ? "city" : "qualification",
+    "statut client confirmé avec identité déjà connue"
+  );
+} else {
+  setFlowStage(
+    "identity",
+    "statut client confirmé, identité requise"
+  );
+}
 
               addSystemContext(
                 customerStatus === "existing"
