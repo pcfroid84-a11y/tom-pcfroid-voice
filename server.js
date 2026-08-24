@@ -1475,6 +1475,17 @@ app.get("/media-stream", { websocket: true }, (socket) => {
     state.identityName = name;
     state.awaitingIdentity = false;
     state.identityRecoveryNeeded = false;
+   if (state.customerStatus === "new") {
+  setFlowStage(
+    "city",
+    "identité confirmée pour nouveau client"
+  );
+} else if (state.customerStatus === "existing") {
+  setFlowStage(
+    "qualification",
+    "identité confirmée pour client existant"
+  );
+}
  
     addSystemContext(
       `IDENTITÉ APPELANT CONFIRMÉE : ${name}. Ne redemande plus l'identité pendant cet appel.`
