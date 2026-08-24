@@ -1682,6 +1682,14 @@ if (customerContext.known) {
     };
   }
 }
+
+   if (state.flowStage === "callback") {
+  return {
+    stage: "callback",
+    instructions:
+      'Ne posez plus aucune question technique. Demandez exactement et uniquement : "On peut vous rappeler sur le numéro avec lequel vous appelez ?" Puis arrêtez-vous et attendez la réponse.',
+  };
+}
    
     return null;
   }
