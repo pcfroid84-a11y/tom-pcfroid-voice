@@ -1043,16 +1043,19 @@ function detectExplicitEquipment(text) {
     { name: "pompe à chaleur", terms: ["pompe à chaleur", "pompe a chaleur", "pac"] },
     { name: "chauffe-eau", terms: ["chauffe-eau", "chauffe eau", "ballon thermodynamique", "chauffe-eau thermodynamique"] },
     {
-  name: "climatisation",
-  terms: [
-    "climatisation",
-    "clim",
-    "climatiseur",
-    "gainable",
-    "gainables",
-    "clim gainable",
-    "climatisation gainable"
-  ]
+terms: [
+  "climatisation",
+  "clim",
+  "climatiseur",
+  "gainable",
+  "gainables",
+  "génable",
+  "génables",
+  "genable",
+  "genables",
+  "clim gainable",
+  "climatisation gainable"
+]
 },
   ];
  
