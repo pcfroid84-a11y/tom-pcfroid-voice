@@ -1054,6 +1054,8 @@ function detectExplicitEquipment(text) {
     "génables",
     "genable",
     "genables",
+   "égoutable",
+"égoutables",
     "clim gainable",
     "climatisation gainable"
   ]
