@@ -2000,7 +2000,7 @@ app.log.info(
     maybeConfigureOpenAISession();
   });
  
-  openAiWs.on("message", (raw) => {
+  openAiWs.on("message", async (raw) => {
     try {
       const event = JSON.parse(raw.toString());
  
