@@ -1703,6 +1703,13 @@ if (customerContext.known) {
         "Pour une climatisation ou un gainable, posez UNE SEULE question technique courte à la fois. Maximum deux questions au total. Demandez uniquement ce que le client constate simplement : le symptôme, depuis quand, si l’appareil démarre, ou s’il affiche un voyant ou un code d’erreur. Ne demandez aucune manipulation, aucun démontage et aucune vérification de l’installation électrique, du tableau ou des disjoncteurs. Ne faites pas de diagnostic.",
     };
   }
+   if (state.explicitEquipment !== "chambre froide") {
+  return {
+    stage: "qualification-generic",
+    instructions:
+      "Vous êtes encore dans l’étape de qualification. Posez UNE SEULE question technique courte et utile à la fois. Ne demandez ni l’adresse, ni le numéro de téléphone, ni la confirmation du numéro appelant, et ne dites pas encore que vous transmettez la demande. Ne reformulez pas ce que le client vient de dire. Attendez sa réponse.",
+  };
+}
 }
 
    if (
