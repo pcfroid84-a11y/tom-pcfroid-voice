@@ -2385,7 +2385,7 @@ app.log.info(
           // comme « oui bonjour » ou « je vous appelle... ». Attendez la demande réelle.
           // Contrairement à l'ancienne temporisation de 3 secondes sur /incoming-call,
           // ce filtre ne retarde pas le décrochage : il agit seulement sur les fragments transcrits.
-         if (
+        if (
   state.lastConversationResponseAt === 0 &&
   !isUsefulCallerMessage(callerMessage) &&
   !detectedEquipment
