@@ -749,7 +749,11 @@ function cleanCityCandidate(value) {
 }
 
 function extractCityCandidate(text) {
-  const raw = String(text || "").trim();
+  const raw = String(text || "")
+    .trim()
+    .replace(/[.!?;:,]+$/u, "")
+    .trim();
+
   if (!raw) return null;
 
   const normalizedRaw = ` ${normalizeCityKey(raw)} `;
