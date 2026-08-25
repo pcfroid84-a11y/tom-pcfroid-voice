@@ -1648,8 +1648,8 @@ if (customerContext.known) {
      
       return {
         stage: "new-city",
-        instructions:
-          'Nouveau client : la ville doit être contrôlée avant toute qualification technique ou demande d’adresse complète. Demandez exactement et uniquement : "Dans quelle ville se trouve l’installation ?" Puis arrêtez-vous et attendez la réponse.',
+       instructions:
+  'DITES EXACTEMENT ET UNIQUEMENT CETTE PHRASE, SANS AUCUN MOT AVANT NI APRÈS : "Dans quelle ville se trouve l’installation ?" Ne répondez à aucun autre sujet dans ce tour. Arrêtez-vous immédiatement après la question et attendez la réponse.',
       };
     }
        if (
