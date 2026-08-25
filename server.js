@@ -2258,36 +2258,42 @@ app.log.info(
       "callback",
       "adresse habituelle confirmée"
     );
+  } else if (
+    state.knownCustomerAddress &&
+    (normalizedAddressAnswer === "non" ||
+      normalizedAddressAnswer.startsWith("non "))
+  ) {
+    state.knownCustomerAddress = null;
+
+    addSystemContext(
+      "L’appelant a indiqué que l’intervention n’est pas à son adresse habituelle. Demandez uniquement la nouvelle adresse d’intervention."
+    );
   } else if (!state.knownCustomerAddress) {
-  const addressLooksPlausible =
-    /\d/.test(callerMessage) ||
-    /\b(rue|avenue|av|boulevard|bd|chemin|route|impasse|allée|allee|place|lotissement|résidence|residence|zone|quartier)\b/i.test(
-      callerMessage
-    );
+    const addressLooksPlausible =
+      /\d/.test(callerMessage) ||
+      /\b(rue|avenue|av|boulevard|bd|chemin|route|impasse|allée|allee|place|lotissement|résidence|residence|zone|quartier)\b/i.test(
+        callerMessage
+      );
 
-  if (addressLooksPlausible) {
-    state.interventionAddress = callerMessage;
+    if (addressLooksPlausible) {
+      state.interventionAddress = callerMessage;
 
-    setFlowStage(
-      "callback",
-      "adresse d’intervention enregistrée"
-    );
+      setFlowStage(
+        "callback",
+        "adresse d’intervention enregistrée"
+      );
 
-    addSystemContext(
-      `ADRESSE D'INTERVENTION FOURNIE PAR L'APPELANT : ${callerMessage}. Ne modifiez aucun numéro et ne réinventez pas l'adresse.`
-    );
-  } else {
-    addSystemContext(
-      "La réponse reçue ne ressemble pas suffisamment à une adresse d’intervention. Ne l’enregistrez pas comme adresse. Demandez uniquement l’adresse complète d’intervention."
-    );
+      addSystemContext(
+        `ADRESSE D'INTERVENTION FOURNIE PAR L'APPELANT : ${callerMessage}. Ne modifiez aucun numéro et ne réinventez pas l'adresse.`
+      );
+    } else {
+      addSystemContext(
+        "La réponse reçue ne ressemble pas suffisamment à une adresse d’intervention. Ne l’enregistrez pas comme adresse. Demandez uniquement l’adresse complète d’intervention."
+      );
+    }
   }
 }
-
-    addSystemContext(
-      `ADRESSE D'INTERVENTION FOURNIE PAR L'APPELANT : ${callerMessage}. Ne modifiez aucun numéro et ne réinventez pas l'adresse.`
-    );
-  }
-}
+         
          if (state.flowStage === "callback") {
   const normalizedCallbackAnswer = normalizeText(callerMessage);
 
