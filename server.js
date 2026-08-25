@@ -2376,7 +2376,7 @@ if (
   return;
 }
          
-          await loadN8nContext(callerMessage);
+          void loadN8nContext(callerMessage);
           requestConversationResponse("transcription-completed");
         }
       }
