@@ -2490,7 +2490,10 @@ if (
           app.log.info("Question finale marquée comme déjà posée");
         }
  
-       if (assistantIsClosing(assistantText)) {
+       if (
+  state.flowStage === "closing" ||
+  assistantIsClosing(assistantText)
+) {
   if (state.identityKnown || state.callerRequestedEnd) {
     state.closingStarted = true;
     state.conversationModeEnabled = false;
