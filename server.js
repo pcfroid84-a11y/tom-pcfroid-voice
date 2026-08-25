@@ -1669,7 +1669,7 @@ if (customerContext.known) {
       setFlowStage("qualification", "coordonnées préalables validées");
     }
 
-   if (state.flowStage === "qualification") {
+  if (state.flowStage === "qualification") {
   const maxQualificationQuestions =
     state.explicitEquipment === "chambre froide" ? 4 : 2;
 
@@ -1683,6 +1683,14 @@ if (customerContext.known) {
       stage: "address",
       instructions:
         "La qualification est terminée. Ne posez plus aucune question technique. Passez maintenant à l’adresse d’intervention. Pour un client existant dont une adresse habituelle est connue dans le contexte, demandez si l’intervention est à la même adresse que d’habitude. Sinon, demandez uniquement l’adresse d’intervention. Une seule question puis attendez la réponse.",
+    };
+  }
+
+  if (state.explicitEquipment === "climatisation") {
+    return {
+      stage: "qualification-climatisation",
+      instructions:
+        "Pour une climatisation ou un gainable, posez UNE SEULE question technique courte à la fois. Maximum deux questions au total. Demandez uniquement ce que le client constate simplement : le symptôme, depuis quand, si l’appareil démarre, ou s’il affiche un voyant ou un code d’erreur. Ne demandez aucune manipulation, aucun démontage et aucune vérification de l’installation électrique, du tableau ou des disjoncteurs. Ne faites pas de diagnostic.",
     };
   }
 }
