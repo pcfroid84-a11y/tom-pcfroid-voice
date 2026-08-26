@@ -2108,6 +2108,12 @@ app.log.info(
 
           state.lastCallerMessage = callerMessage;
 
+          // Un même tour client ne doit normalement faire avancer qu'une seule étape.
+          // On mémorise l'étape au début du traitement pour éviter qu'une réponse
+          // au statut client soit aussi prise pour une identité, ou qu'une adresse
+          // commençant par « oui » valide aussi le numéro de rappel.
+          const flowStageAtTurnStart = state.flowStage;
+
           if (isClearlyOutOfCompetenceRequest(callerMessage)) {
             state.outOfCompetenceFlow = true;
           }
@@ -2162,7 +2168,7 @@ app.log.info(
 }
  
           // V2.9 : statut client explicite, indépendant du raisonnement du modèle.
-         if (state.flowStage === "customer_status") {
+         if (flowStageAtTurnStart === "customer_status") {
             const customerStatus = extractCustomerStatusAnswer(callerMessage);
             if (customerStatus) {
               state.customerStatus = customerStatus;
@@ -2194,7 +2200,7 @@ app.log.info(
 
           // V2.9 : une ville demandée ou corrigée vient de la transcription client.
           // Une correction remplace immédiatement l'ancienne ville.
-          if (state.flowStage === "city" || callerCorrectsCity(callerMessage)) {
+          if (flowStageAtTurnStart === "city" || callerCorrectsCity(callerMessage)) {
             const cityCandidate = extractCityCandidate(callerMessage);
 
             if (cityCandidate) {
@@ -2241,7 +2247,7 @@ app.log.info(
               }
 
              if (
-  state.flowStage === "city" &&
+  flowStageAtTurnStart === "city" &&
   state.customerStatus === "new" &&
   state.cityZoneStatus !== "out"
 ) {
@@ -2263,7 +2269,7 @@ app.log.info(
             }
           }
 
-         if (state.flowStage === "address") {
+         if (flowStageAtTurnStart === "address") {
   const normalizedAddressAnswer = normalizeText(callerMessage);
 
   if (
@@ -2313,7 +2319,7 @@ app.log.info(
   }
 }
          
-         if (state.flowStage === "callback") {
+         if (flowStageAtTurnStart === "callback") {
   const normalizedCallbackAnswer = normalizeText(callerMessage);
 
   if (
@@ -2337,7 +2343,7 @@ app.log.info(
   }
 }
 
-         if (state.flowStage === "callback_number") {
+         if (flowStageAtTurnStart === "callback_number") {
   const callbackPhoneCandidate = callerMessage.replace(/[^\d+]/g, "");
   const callbackPhoneDigits = callbackPhoneCandidate.replace(/\D/g, "");
 
@@ -2356,7 +2362,7 @@ app.log.info(
 }
          
          if (
-  state.flowStage === "final_question" &&
+  flowStageAtTurnStart === "final_question" &&
   state.finalQuestionAsked
 ) {
   setFlowStage(
@@ -2369,7 +2375,7 @@ app.log.info(
             let detectedName = null;
 
             // Si Tom vient de demander l’identité, une réponse nominale courte suffit.
-           if (state.flowStage === "identity") {
+           if (flowStageAtTurnStart === "identity") {
               detectedName = extractDirectIdentityAnswer(callerMessage);
             }
 
@@ -2382,9 +2388,9 @@ app.log.info(
             if (detectedName) {
              setIdentityKnown(
   detectedName,
-  state.flowStage === "identity" ? "question-identité" : "volontaire"
+  flowStageAtTurnStart === "identity" ? "question-identité" : "volontaire"
 );
-            } else if (state.flowStage === "identity") {
+            } else if (flowStageAtTurnStart === "identity") {
               app.log.info(
                 { callerMessage },
                 "Réponse reçue mais identité non validée"
