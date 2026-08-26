@@ -2038,6 +2038,15 @@ app.log.info(
   openAiWs.on("message", async (raw) => {
     try {
       const event = JSON.parse(raw.toString());
+     if (
+  event.type === "input_audio_buffer.speech_started" ||
+  event.type === "input_audio_buffer.speech_stopped"
+) {
+  app.log.info(
+    { eventType: event.type },
+    "Détection parole client OpenAI"
+  );
+}
  
       if (event.type === "session.updated") {
         const firstReady = !state.openAiReady;
