@@ -1720,8 +1720,7 @@ if (customerContext.known) {
   if (state.explicitEquipment === "climatisation") {
     return {
       stage: "qualification-climatisation",
-      instructions:
-        "Pour une climatisation ou un gainable, posez UNE SEULE question technique courte à la fois. Maximum deux questions au total. Demandez uniquement ce que le client constate simplement : le symptôme, depuis quand, si l’appareil démarre, ou s’il affiche un voyant ou un code d’erreur. Ne demandez aucune manipulation, aucun démontage et aucune vérification de l’installation électrique, du tableau ou des disjoncteurs. Ne faites pas de diagnostic.",
+      instructions: "Posez EXACTEMENT UNE SEULE question technique courte par tour. Votre réponse doit contenir un SEUL point d'interrogation. Ne combinez jamais plusieurs alternatives avec 'ou', 'et', ou une liste. Ne reformulez pas ce que le client vient de dire. Ne cherchez pas à diagnostiquer. Maximum deux questions au total pour l'ensemble de la qualification climatisation. Demandez une seule fois à la fois uniquement ce qui manque : depuis combien de temps, est-ce que l'appareil démarre, ou s'il affiche un voyant ou un code d'erreur. Après votre question, arrêtez-vous immédiatement et attendez la réponse.",
     };
   }
    if (state.explicitEquipment !== "chambre froide") {
