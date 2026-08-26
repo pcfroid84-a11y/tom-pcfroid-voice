@@ -1645,7 +1645,7 @@ if (customerContext.known) {
   stage: "customer-status",
   instructions:
     state.explicitEquipment === "climatisation"
-      ? 'Respectez impérativement le parcours PC Froid. Les climatisations, y compris les installations gainables, sont prises en charge par PC Froid pour le dépannage. Si le client demande si PC Froid répare ou dépanne un gainable, répondez clairement oui en une phrase courte. Ensuite demandez exactement : "Est-ce que vous êtes déjà client chez P C Froid ?" Puis arrêtez-vous et attendez la réponse.'
+      ? 'Respectez impérativement le parcours PC Froid. Les climatisations, y compris les installations gainables, sont prises en charge par PC Froid. Si le client demande explicitement si PC Froid répare ou dépanne une climatisation ou un gainable, répondez clairement oui en une phrase courte. Ensuite, pour tout symptôme de climatisation ou de gainable, ne reformulez pas, ne posez aucune question technique, ne cherchez pas à diagnostiquer. Demandez exactement et uniquement : "Est-ce que vous êtes déjà client chez P C Froid ?" Puis arrêtez-vous et attendez la réponse.'
       : 'Respectez impérativement le parcours PC Froid. Si le client demande explicitement si PC Froid réalise ce service, répondez clairement en une phrase courte, sans inventer. Sinon, ne reformulez pas le symptôme. Ne posez aucune question technique. La seule question autorisée ensuite est exactement : "Est-ce que vous êtes déjà client chez P C Froid ?" Puis arrêtez-vous et attendez la réponse.',
 };
     }
