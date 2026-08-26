@@ -1,0 +1,101 @@
+name: Patch strict customer status parsing
+
+on:
+  push:
+    paths:
+      - '.github/workflows/patch-customer-status.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Tighten customer status parsing
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('server.js')
+          s = p.read_text()
+          old = '''function extractCustomerStatusAnswer(text) {
+  const normalized = normalizeText(text);
+  if (!normalized) return null;
+
+  if (
+    normalized === "non" ||
+    normalized.startsWith("non ") ||
+    normalized.includes("pas du tout") ||
+    normalized.includes("pas encore client") ||
+    normalized.includes("nouveau client")
+  ) {
+    return "new";
+  }
+
+  if (
+    normalized === "oui" ||
+    normalized.startsWith("oui ") ||
+    normalized.includes("déjà client") ||
+    normalized.includes("deja client") ||
+    normalized.includes("je suis client")
+  ) {
+    return "existing";
+  }
+
+  return null;
+}'''
+          new = '''function extractCustomerStatusAnswer(text) {
+  const normalized = normalizeText(text);
+  if (!normalized) return null;
+
+  // Un simple « oui » ou « non » isolé répond bien à la question de statut.
+  // En revanche, une phrase qui commence seulement par oui/non ne doit jamais
+  // être classée automatiquement : « oui, je demandais pour l'entretien »
+  // n'est pas une confirmation de statut client.
+  if (["non", "non merci", "pas du tout"].includes(normalized)) {
+    return "new";
+  }
+
+  if (
+    normalized.includes("je ne suis pas client") ||
+    normalized.includes("je suis pas client") ||
+    normalized.includes("pas encore client") ||
+    normalized.includes("nouveau client") ||
+    normalized.includes("jamais été client") ||
+    normalized.includes("jamais ete client")
+  ) {
+    return "new";
+  }
+
+  if (["oui", "oui bien sûr", "oui bien sur", "tout à fait", "tout a fait"].includes(normalized)) {
+    return "existing";
+  }
+
+  if (
+    normalized.includes("déjà client") ||
+    normalized.includes("deja client") ||
+    normalized.includes("je suis client") ||
+    normalized.includes("je suis déjà client") ||
+    normalized.includes("je suis deja client")
+  ) {
+    return "existing";
+  }
+
+  return null;
+}'''
+          if old not in s:
+              raise SystemExit('Target extractCustomerStatusAnswer block not found')
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+          PY
+      - name: Remove one-time workflow and commit
+        run: |
+          rm .github/workflows/patch-customer-status.yml
+          git config user.name "Tom PC Froid Bot"
+          git config user.email "actions@users.noreply.github.com"
+          git add server.js .github/workflows/patch-customer-status.yml
+          git commit -m "Tighten customer status answer detection"
+          git push
