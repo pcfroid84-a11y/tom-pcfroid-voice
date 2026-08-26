@@ -2402,7 +2402,8 @@ app.log.info(
 // Tom attend la vraie demande avant de répondre.
 if (
   state.lastConversationResponseAt === 0 &&
-  !isUsefulCallerMessage(callerMessage)
+  !isUsefulCallerMessage(callerMessage) &&
+  !detectedEquipment
 ) {
   app.log.info(
     { callerMessage },
