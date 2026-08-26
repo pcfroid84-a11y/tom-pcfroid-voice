@@ -655,22 +655,33 @@ function extractCustomerStatusAnswer(text) {
   const normalized = normalizeText(text);
   if (!normalized) return null;
 
+  // "new" classification
   if (
     normalized === "non" ||
-    normalized.startsWith("non ") ||
+    normalized === "non merci" ||
     normalized.includes("pas du tout") ||
     normalized.includes("pas encore client") ||
-    normalized.includes("nouveau client")
+    normalized.includes("nouveau client") ||
+    normalized.includes("je ne suis pas client") ||
+    normalized.includes("je suis pas client") ||
+    normalized.includes("jamais été client") ||
+    normalized.includes("jamais ete client")
   ) {
     return "new";
   }
 
+  // "existing" classification
   if (
     normalized === "oui" ||
-    normalized.startsWith("oui ") ||
+    normalized === "oui bien sûr" ||
+    normalized === "oui bien sur" ||
+    normalized === "tout à fait" ||
+    normalized === "tout a fait" ||
     normalized.includes("déjà client") ||
     normalized.includes("deja client") ||
-    normalized.includes("je suis client")
+    normalized.includes("je suis client") ||
+    normalized.includes("je suis déjà client") ||
+    normalized.includes("je suis deja client")
   ) {
     return "existing";
   }
