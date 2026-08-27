@@ -652,8 +652,12 @@ function assistantAskedForCustomerStatus(text) {
 }
 
 function extractCustomerStatusAnswer(text) {
-  const normalized = normalizeText(text);
+  let normalized = normalizeText(text);
   if (!normalized) return null;
+
+  // Strip leading hesitation tokens (euh, ben, bah) before checking phrases
+  const hesitationTokens = /^(euh|ben|bah)\s+/;
+  normalized = normalized.replace(hesitationTokens, '');
 
   // "new" classification
   if (
