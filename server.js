@@ -1028,16 +1028,24 @@ function callerIsClosing(text) {
     "non ca ira merci",
     "ça ira merci",
     "ca ira merci",
-   "non ça va merci",
-"non ca va merci",
-"non c'est bon merci",
-"non c est bon merci",
-"merci quand même",
-"merci quand meme",
+    "non ça va merci",
+    "non ca va merci",
+    "non c'est bon merci",
+    "non c est bon merci",
+    "merci quand même",
+    "merci quand meme",
     "je vais voir ailleurs",
     "je vais regarder ailleurs",
     "je vais appeler quelqu'un d'autre",
-    "je vais appeler quelqu un d autre"
+    "je vais appeler quelqu un d autre",
+    // New closing phrases: natural end-of-call expressions with "merci"
+    "bon c'est pas grave merci beaucoup",
+    "bon c est pas grave merci beaucoup",
+    "c'est pas grave merci",
+    "c est pas grave merci",
+    "bon tant pis merci",
+    "tant pis",
+    "merci beaucoup je vais vous laisser"
   ].some(
     (phrase) =>
       normalized === phrase ||
