@@ -1439,7 +1439,7 @@ callbackPhone: null,
       type: "response.create",
       response: {
         output_modalities: ["audio"],
-        instructions: `Output ONLY this exact text with zero additions or questions: "${state.greetingText}" Do not append any identity prompt, name question, or other text. Pronounce "P C Froid" as "pé cé froi" with the final D of "froid" silent. Never say "PC froide". Stop immediately after the greeting.`,
+        instructions: `Dites exactement et uniquement : "${state.greetingText}" Prononcez toujours "P C Froid" comme "pé cé froi", avec le D final de "froid" totalement muet. Ne dites jamais "PC froide". Puis arrêtez-vous. N'ajoutez aucune deuxième formule d'accueil, aucune reformulation et aucune question sur un équipement précis.`,
       },
     });
   }
@@ -1656,7 +1656,7 @@ if (customerContext.known) {
   stage: "customer-status",
   instructions:
     state.explicitEquipment === "climatisation"
-      ? 'If the client explicitly asks whether PC Froid handles climatisation repair or maintenance, answer with ONLY a brief yes statement: "Oui, tout à fait, nous faisons l\'entretien des climatisations." Then in the SAME response, add EXACTLY one question with exactly one question mark: "Est-ce que vous êtes déjà client chez P C Froid ?" Output exactly these two sentences in sequence. Do not add any technical diagnosis, do not add any other questions, do not reformulate. Stop after these exact sentences.'
+      ? 'Respectez impérativement le parcours PC Froid. Les climatisations, y compris les installations gainables, sont prises en charge par PC Froid. Si le client demande explicitement si PC Froid répare ou dépanne une climatisation ou un gainable, répondez clairement oui en une phrase courte. Ensuite, pour tout symptôme de climatisation ou de gainable, ne reformulez pas, ne posez aucune question technique, ne cherchez pas à diagnostiquer. Demandez exactement et uniquement : "Est-ce que vous êtes déjà client chez P C Froid ?" Puis arrêtez-vous et attendez la réponse.'
       : 'Respectez impérativement le parcours PC Froid. Si le client demande explicitement si PC Froid réalise ce service, répondez clairement en une phrase courte, sans inventer. Sinon, ne reformulez pas le symptôme. Ne posez aucune question technique. La seule question autorisée ensuite est exactement : "Est-ce que vous êtes déjà client chez P C Froid ?" Puis arrêtez-vous et attendez la réponse.',
 };
     }
