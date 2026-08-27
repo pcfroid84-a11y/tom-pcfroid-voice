@@ -1656,7 +1656,7 @@ if (customerContext.known) {
   stage: "customer-status",
   instructions:
     state.explicitEquipment === "climatisation"
-      ? 'If the client explicitly asks whether PC Froid handles climatisation repair or maintenance, answer with ONLY a brief yes statement: "Oui, tout à fait, nous faisons l\'entretien des climatisations." Then in the SAME response, add EXACTLY one question with exactly one question mark: "Est-ce que vous êtes déjà client chez P C Froid ?" Output exactly these two sentences in sequence. Do not add any technical diagnosis, do not add any other questions, do not reformulate. Stop after these exact sentences.'
+      ? 'If the client explicitly asks whether PC Froid handles climatisation maintenance or repair, output EXACTLY two sentences: first a brief yes statement "Oui, tout à fait, nous prenons en charge les climatisations." then exactly "Est-ce que vous êtes déjà client chez P C Froid ?" with one question mark only. If the client reports a climatisation symptom instead of asking a service question, output ONLY the status question "Est-ce que vous êtes déjà client chez P C Froid ?" with exactly one question mark. Never add technical diagnosis, technical questions, or reformulation. Stop after the question(s).'
       : 'Respectez impérativement le parcours PC Froid. Si le client demande explicitement si PC Froid réalise ce service, répondez clairement en une phrase courte, sans inventer. Sinon, ne reformulez pas le symptôme. Ne posez aucune question technique. La seule question autorisée ensuite est exactement : "Est-ce que vous êtes déjà client chez P C Froid ?" Puis arrêtez-vous et attendez la réponse.',
 };
     }
