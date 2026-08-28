@@ -2295,19 +2295,6 @@ if (flowStageAtTurnStart === "customer_status") {
   }
 }
 
-              addSystemContext(
-                customerStatus === "existing"
-                  ? "STATUT CLIENT CONFIRMÉ PAR L'APPELANT : client PC Froid existant. Ne bloquez jamais cet appel sur la zone géographique."
-                  : "STATUT CLIENT CONFIRMÉ PAR L'APPELANT : nouveau client. La ville doit être contrôlée avant de poursuivre inutilement une demande hors secteur."
-              );
-
-              app.log.info(
-                { customerStatus },
-                "Statut client confirmé par l'appelant"
-              );
-            }
-          }
-
           // V2.9 : une ville demandée ou corrigée vient de la transcription client.
           // Une correction remplace immédiatement l'ancienne ville.
           if (flowStageAtTurnStart === "city" || callerCorrectsCity(callerMessage)) {
