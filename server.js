@@ -2248,37 +2248,51 @@ if (
   }
 }
           // V2.9 : statut client explicite, indépendant du raisonnement du modèle.
-         if (flowStageAtTurnStart === "customer_status") {
-            const customerStatus = extractCustomerStatusAnswer(callerMessage);
-            if (customerStatus) {
-              state.customerStatus = customerStatus;
-              state.awaitingCustomerStatus = false;
-             if (state.identityKnown) {
-  setFlowStage(
-    customerStatus === "new" ? "city" : "qualification",
-    "statut client confirmé avec identité déjà connue"
-  );
-} else {
-  setFlowStage(
-    "identity",
-    "statut client confirmé, identité requise"
-  );
-              else {
-  cancelActiveResponse();
+if (flowStageAtTurnStart === "customer_status") {
+  const customerStatus = extractCustomerStatusAnswer(callerMessage);
 
-  setTimeout(() => {
-    sendToOpenAI({
-      type: "response.create",
-      response: {
-        output_modalities: ["audio"],
-        instructions:
-          'Répondez exactement et uniquement : "Je n’ai pas bien compris. Est-ce que vous êtes déjà client chez P C Froid ?" Ne posez aucune autre question.'
-      }
-    });
-  }, 80);
+  if (customerStatus) {
+    state.customerStatus = customerStatus;
+    state.awaitingCustomerStatus = false;
 
-  return;
-}
+    if (state.identityKnown) {
+      setFlowStage(
+        customerStatus === "new" ? "city" : "qualification",
+        "statut client confirmé avec identité déjà connue"
+      );
+    } else {
+      setFlowStage(
+        "identity",
+        "statut client confirmé, identité requise"
+      );
+    }
+
+    addSystemContext(
+      customerStatus === "existing"
+        ? "STATUT CLIENT CONFIRMÉ PAR L'APPELANT : client PC Froid existant. Ne bloquez jamais cet appel sur la zone géographique."
+        : "STATUT CLIENT CONFIRMÉ PAR L'APPELANT : nouveau client. La ville doit être contrôlée avant de poursuivre inutilement une demande hors secteur."
+    );
+
+    app.log.info(
+      { customerStatus },
+      "Statut client confirmé par l'appelant"
+    );
+  } else {
+    cancelActiveResponse();
+
+    setTimeout(() => {
+      sendToOpenAI({
+        type: "response.create",
+        response: {
+          output_modalities: ["audio"],
+          instructions:
+            'Répondez exactement et uniquement : "Je n’ai pas bien compris. Est-ce que vous êtes déjà client chez P C Froid ?" Ne posez aucune autre question.'
+        }
+      });
+    }, 80);
+
+    return;
+  }
 }
 
               addSystemContext(
