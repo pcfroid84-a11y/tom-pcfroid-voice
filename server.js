@@ -2148,6 +2148,18 @@ app.log.info(
 
           if (isClearlyOutOfCompetenceRequest(callerMessage)) {
             state.outOfCompetenceFlow = true;
+           if (isPartnerOrSupplierRequest(callerMessage)) {
+  state.partnerOrSupplierFlow = true;
+
+  addSystemContext(
+    "PARCOURS PARTENAIRE / FOURNISSEUR ACTIF : ne demandez pas le statut client, la ville, l'adresse ou des informations techniques. Prenez uniquement l'identité, la société si elle est donnée, le motif ou message à transmettre, et un numéro de rappel seulement si nécessaire. Ne prétendez jamais transférer l'appel ni mettre en attente."
+  );
+
+  app.log.info(
+    { callerMessage },
+    "Parcours partenaire / fournisseur activé"
+  );
+}
           }
  
           const detectedEquipment = detectExplicitEquipment(callerMessage);
