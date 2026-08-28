@@ -1672,11 +1672,12 @@ if (customerContext.known) {
 }
   function getFlowLockResponse() {
     if (
-      state.outOfCompetenceFlow ||
-      isPersonalQuestionMessage(state.lastCallerMessage || "")
-    ) {
-      return null;
-    }
+  state.outOfCompetenceFlow ||
+  state.partnerOrSupplierFlow ||
+  isPersonalQuestionMessage(state.lastCallerMessage || "")
+) {
+  return null;
+}
 
     if (state.customerStatus === null) {
      setFlowStage("customer_status", "statut client requis");
