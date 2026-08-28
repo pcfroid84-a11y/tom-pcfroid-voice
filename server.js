@@ -2173,7 +2173,34 @@ app.log.info(
 
   return;
 }
- 
+
+         // Mémorise une ville donnée spontanément dès le début de l'appel,
+// sans sauter l'étape du statut client.
+if (
+  !state.interventionCity &&
+  (flowStageAtTurnStart === "need" ||
+    flowStageAtTurnStart === "customer_status")
+) {
+  const spontaneousCity = extractCityCandidate(callerMessage);
+
+  if (spontaneousCity) {
+    state.interventionCity = spontaneousCity;
+    state.cityZoneStatus = classifyServiceArea(spontaneousCity);
+
+    addSystemContext(
+      `VILLE D'INTERVENTION DÉJÀ DONNÉE PAR L'APPELANT : ${spontaneousCity}. Mémorisez-la et ne la redemandez pas. Le statut client reste néanmoins l'étape en cours.`
+    );
+
+    app.log.info(
+      {
+        city: spontaneousCity,
+        zone: state.cityZoneStatus,
+        flowStageAtTurnStart,
+      },
+      "Ville mémorisée spontanément"
+    );
+  }
+}
           // V2.9 : statut client explicite, indépendant du raisonnement du modèle.
          if (flowStageAtTurnStart === "customer_status") {
             const customerStatus = extractCustomerStatusAnswer(callerMessage);
