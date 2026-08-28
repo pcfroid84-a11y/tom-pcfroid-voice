@@ -1671,6 +1671,13 @@ if (customerContext.known) {
   );
 }
   function getFlowLockResponse() {
+   if (state.partnerOrSupplierFlow) {
+  return {
+    stage: "partner-supplier",
+    instructions:
+      'PARCOURS PARTENAIRE / FOURNISSEUR. Ne demandez jamais si la personne est déjà cliente PC Froid. Ne demandez ni ville, ni adresse, ni qualification technique. Ne dites jamais "je vous mets en attente" ni "je vous transfère". Si le nom ou la société ne sont pas encore connus, demandez simplement qui appelle et de quelle société. Sinon, demandez uniquement ce que la personne souhaite transmettre à Christophe. Réponse courte, naturelle, une seule question à la fois.'
+  };
+}
     if (
   state.outOfCompetenceFlow ||
   state.partnerOrSupplierFlow ||
