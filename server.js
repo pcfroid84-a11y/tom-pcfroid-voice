@@ -656,7 +656,7 @@ function extractCustomerStatusAnswer(text) {
   if (!normalized) return null;
 
   // Strip leading hesitation tokens (euh, ben, bah) before checking phrases
-  const hesitationTokens = /^(euh|ben|bah)\s+/;
+  const hesitationTokens = /^(euh|ben|bah|ah)\s+/;
   normalized = normalized.replace(hesitationTokens, '');
 
   // "new" classification
