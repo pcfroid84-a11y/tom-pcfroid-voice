@@ -2263,6 +2263,22 @@ if (
     "identity",
     "statut client confirmé, identité requise"
   );
+              else {
+  cancelActiveResponse();
+
+  setTimeout(() => {
+    sendToOpenAI({
+      type: "response.create",
+      response: {
+        output_modalities: ["audio"],
+        instructions:
+          'Répondez exactement et uniquement : "Je n’ai pas bien compris. Est-ce que vous êtes déjà client chez P C Froid ?" Ne posez aucune autre question.'
+      }
+    });
+  }, 80);
+
+  return;
+}
 }
 
               addSystemContext(
