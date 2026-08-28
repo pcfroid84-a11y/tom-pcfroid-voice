@@ -893,6 +893,30 @@ function isClearlyOutOfCompetenceRequest(text) {
     "extraction de cuisine",
   ].some((term) => normalized.includes(term));
 }
+function isPartnerOrSupplierRequest(text) {
+  const normalized = normalizeText(text);
+  if (!normalized) return false;
+
+  // Détection directe par rôle explicite.
+  if (
+    normalized.includes("fournisseur") ||
+    normalized.includes("partenaire") ||
+    normalized.includes("grossiste")
+  ) {
+    return true;
+  }
+
+  // Partenaire connu : GMLec / GML EC / GML.
+  if (
+    /\bgmlec\b/.test(normalized) ||
+    /\bgml ec\b/.test(normalized) ||
+    /\bgml\b/.test(normalized)
+  ) {
+    return true;
+  }
+
+  return false;
+}
  
 function cleanIdentityName(value) {
   let candidate = String(value || "")
