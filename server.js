@@ -2155,8 +2155,10 @@ app.log.info(
           const flowStageAtTurnStart = state.flowStage;
 
           if (isClearlyOutOfCompetenceRequest(callerMessage)) {
-            state.outOfCompetenceFlow = true;
-           if (isPartnerOrSupplierRequest(callerMessage)) {
+  state.outOfCompetenceFlow = true;
+}
+
+if (isPartnerOrSupplierRequest(callerMessage)) {
   state.partnerOrSupplierFlow = true;
 
   addSystemContext(
@@ -2168,7 +2170,6 @@ app.log.info(
     "Parcours partenaire / fournisseur activé"
   );
 }
-          }
  
           const detectedEquipment = detectExplicitEquipment(callerMessage);
           if (detectedEquipment && state.explicitEquipment !== detectedEquipment) {
