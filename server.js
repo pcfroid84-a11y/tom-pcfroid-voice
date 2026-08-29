@@ -927,11 +927,13 @@ function isPartnerOrSupplierRequest(text) {
   }
 
   // Partenaire connu : GMLec / GML EC / GML.
-  if (
-    /\bgmlec\b/.test(normalized) ||
-    /\bgml ec\b/.test(normalized) ||
-    /\bgml\b/.test(normalized)
-  ) {
+ if (
+  /\bgmlec\b/.test(normalized) ||
+  /\bgml ec\b/.test(normalized) ||
+  /\bgml\b/.test(normalized) ||
+  /\bjlmec\b/.test(normalized) ||
+  /\bjlm ec\b/.test(normalized)
+) {
     return true;
   }
 
