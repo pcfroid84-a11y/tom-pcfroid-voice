@@ -1783,14 +1783,14 @@ if (customerContext.known) {
    if (state.serviceIntent === "entretien") {
   setFlowStage(
     "address",
-    "entretien climatisation : aucune qualification technique nécessaire"
+    "entretien : aucune qualification technique nécessaire"
   );
 
   return {
   stage: "address",
   instructions: state.knownCustomerAddress
-    ? 'La demande concerne un entretien de climatisation. Ne posez aucune question technique. Demandez exactement et uniquement : "Est-ce que l’intervention est à la même adresse que d’habitude ?" Puis attendez la réponse.'
-    : 'La demande concerne un entretien de climatisation. Ne posez aucune question technique. Demandez exactement et uniquement l’adresse complète d’intervention, puis attendez la réponse.'
+    ? 'La demande concerne un entretien. Ne posez aucune question technique. Demandez exactement et uniquement : "Est-ce que l’intervention est à la même adresse que d’habitude ?" Puis attendez la réponse.'
+    : 'La demande concerne un entretien. Ne posez aucune question technique. Demandez exactement et uniquement l’adresse complète d’intervention, puis attendez la réponse.'
 };
 }
   const maxQualificationQuestions =
