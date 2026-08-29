@@ -1862,6 +1862,13 @@ if (state.flowStage === "final_question") {
   };
 }
 
+   if (state.flowStage === "final_followup") {
+  return {
+    stage: "final-followup",
+    instructions:
+      "Le client vient de poser une question ou d'ajouter une information après la question finale. Traitez uniquement ce qu'il vient de dire. S'il pose une question, répondez-y brièvement avec uniquement les informations fiables disponibles. Si vous ne connaissez pas la réponse, dites-le simplement sans inventer. S'il ajoute une information, prenez-la en compte sans la reformuler longuement. Ne reposez jamais la question finale. Ensuite, clôturez une seule fois avec une formule courte."
+  };
+}
    if (state.flowStage === "closing") {
   return {
     stage: "closing",
@@ -2549,10 +2556,31 @@ if (
   flowStageAtTurnStart === "final_question" &&
   state.finalQuestionAsked
 ) {
-  setFlowStage(
-    "closing",
-    "réponse reçue après la question finale"
-  );
+  const normalizedFinalAnswer = normalizeText(callerMessage);
+
+  const nothingElseToAdd =
+    normalizedFinalAnswer === "non" ||
+    normalizedFinalAnswer === "non merci" ||
+    normalizedFinalAnswer === "c est tout" ||
+    normalizedFinalAnswer === "c'est tout" ||
+    normalizedFinalAnswer === "rien d autre" ||
+    normalizedFinalAnswer === "rien d'autre" ||
+    normalizedFinalAnswer === "ça ira" ||
+    normalizedFinalAnswer === "ca ira" ||
+    normalizedFinalAnswer === "c est bon" ||
+    normalizedFinalAnswer === "c'est bon";
+
+  if (nothingElseToAdd || callerIsClosing(callerMessage)) {
+    setFlowStage(
+      "closing",
+      "aucune autre question après la question finale"
+    );
+  } else {
+    setFlowStage(
+      "final_followup",
+      "question ou ajout après la question finale"
+    );
+  }
 }
          
           if (!state.identityKnown) {
