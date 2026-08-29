@@ -1707,6 +1707,16 @@ if (customerContext.known) {
   return null;
 }
 
+   if (
+  state.serviceIntent === "entretien" &&
+  !state.explicitEquipment
+) {
+  return {
+    stage: "entretien-equipment",
+    instructions:
+      'Dites exactement et uniquement : "Oui, bien sûr, nous faisons les entretiens. Sur quel type d’appareil souhaitez-vous un entretien ?" Puis arrêtez-vous et attendez la réponse. Ne demandez pas encore si la personne est cliente.'
+  };
+}
     if (state.customerStatus === null) {
      setFlowStage("customer_status", "statut client requis");
      
