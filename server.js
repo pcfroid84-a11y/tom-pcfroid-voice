@@ -2189,7 +2189,27 @@ if (isPartnerOrSupplierRequest(callerMessage)) {
               "Équipement explicite verrouillé"
             );
           }
- 
+
+         const normalizedCallerMessage = normalizeText(callerMessage);
+
+if (
+  state.explicitEquipment === "climatisation" &&
+  (
+    normalizedCallerMessage.includes("entretien") ||
+    normalizedCallerMessage.includes("maintenance")
+  )
+) {
+  state.serviceIntent = "entretien";
+
+  addSystemContext(
+    "MOTIF CONFIRMÉ : l'appelant demande un entretien de climatisation. Ne transformez pas cette demande en simple message pour Christophe et ne cherchez pas à diagnostiquer une panne. Conservez ce motif pendant tout l'appel."
+  );
+
+  app.log.info(
+    { serviceIntent: state.serviceIntent },
+    "Motif entretien climatisation mémorisé"
+  );
+}
          if (callerIsClosing(callerMessage)) {
   state.callerRequestedEnd = true;
 
