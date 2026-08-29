@@ -788,7 +788,24 @@ function extractCityCandidate(text, allowBareCity = false) {
 ];
 
 if (allowBareCity) {
-  patterns.push(/^([\p{L}'’\- ]{2,70})$/u);
+  const bareCity = cleanCityCandidate(raw);
+
+  if (bareCity) {
+    const normalizedBareCity = normalizeText(bareCity);
+    const bareCityWords = normalizeCityKey(bareCity)
+      .split(/\s+/)
+      .filter(Boolean);
+
+    const looksLikeSentence =
+      bareCityWords.length > 4 ||
+      /^(je\b|j['’]|on\b|nous\b|vous\b|il\b|elle\b|ils\b|elles\b|par\b|bonjour\b|oui\b|non\b)/.test(
+        normalizedBareCity
+      );
+
+    if (!looksLikeSentence) {
+      return bareCity;
+    }
+  }
 }
 
   for (const pattern of patterns) {
