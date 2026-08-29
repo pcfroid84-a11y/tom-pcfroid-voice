@@ -1760,10 +1760,11 @@ if (customerContext.known) {
   );
 
   return {
-    stage: "address",
-    instructions:
-      "La demande concerne un entretien de climatisation. Ne posez aucune question de diagnostic ou de panne. Passez directement aux informations nécessaires pour organiser le rappel ou l’intervention, sans inventer de rendez-vous."
-  };
+  stage: "address",
+  instructions: state.knownCustomerAddress
+    ? 'La demande concerne un entretien de climatisation. Ne posez aucune question technique. Demandez exactement et uniquement : "Est-ce que l’intervention est à la même adresse que d’habitude ?" Puis attendez la réponse.'
+    : 'La demande concerne un entretien de climatisation. Ne posez aucune question technique. Demandez exactement et uniquement l’adresse complète d’intervention, puis attendez la réponse.'
+};
 }
   const maxQualificationQuestions =
     state.explicitEquipment === "chambre froide" ? 4 : 2;
