@@ -2314,7 +2314,10 @@ if (
   }
 }
           // V2.9 : statut client explicite, indépendant du raisonnement du modèle.
-if (flowStageAtTurnStart === "customer_status") {
+if (
+  flowStageAtTurnStart === "customer_status" &&
+  !state.partnerOrSupplierFlow
+) {
   const customerStatus = extractCustomerStatusAnswer(callerMessage);
 
   if (customerStatus) {
