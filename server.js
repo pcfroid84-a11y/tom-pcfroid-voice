@@ -2223,21 +2223,23 @@ if (isPartnerOrSupplierRequest(callerMessage)) {
          const normalizedCallerMessage = normalizeText(callerMessage);
 
 if (
-  state.explicitEquipment === "climatisation" &&
-  (
-    normalizedCallerMessage.includes("entretien") ||
-    normalizedCallerMessage.includes("maintenance")
-  )
+  normalizedCallerMessage.includes("entretien") ||
+  normalizedCallerMessage.includes("maintenance")
 ) {
   state.serviceIntent = "entretien";
 
   addSystemContext(
-    "MOTIF CONFIRMÉ : l'appelant demande un entretien de climatisation. Ne transformez pas cette demande en simple message pour Christophe et ne cherchez pas à diagnostiquer une panne. Conservez ce motif pendant tout l'appel."
+    state.explicitEquipment
+      ? `MOTIF CONFIRMÉ : l'appelant demande un entretien pour ${state.explicitEquipment}. Conservez ce motif pendant tout l'appel et ne cherchez pas à diagnostiquer une panne.`
+      : "MOTIF CONFIRMÉ : l'appelant demande un entretien mais n'a pas encore précisé le type d'appareil. Demandez uniquement sur quel type d'appareil il souhaite un entretien."
   );
 
   app.log.info(
-    { serviceIntent: state.serviceIntent },
-    "Motif entretien climatisation mémorisé"
+    {
+      serviceIntent: state.serviceIntent,
+      equipment: state.explicitEquipment,
+    },
+    "Motif entretien mémorisé"
   );
 }
          if (callerIsClosing(callerMessage)) {
