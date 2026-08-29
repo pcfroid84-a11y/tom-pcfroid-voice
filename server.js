@@ -2457,9 +2457,17 @@ if (flowStageAtTurnStart === "customer_status") {
   const normalizedCallbackAnswer = normalizeText(callerMessage);
 
   if (
-    normalizedCallbackAnswer === "oui" ||
-    normalizedCallbackAnswer.startsWith("oui ")
-  ) {
+  normalizedCallbackAnswer === "oui" ||
+  normalizedCallbackAnswer.startsWith("oui ") ||
+  normalizedCallbackAnswer.includes("celui qui s affiche") ||
+  normalizedCallbackAnswer.includes("celui qui s'affiche") ||
+  normalizedCallbackAnswer.includes("ce numero") ||
+  normalizedCallbackAnswer.includes("ce numéro") ||
+  normalizedCallbackAnswer.includes("sur ce numero") ||
+  normalizedCallbackAnswer.includes("sur ce numéro") ||
+  normalizedCallbackAnswer.includes("numero avec lequel j appelle") ||
+  normalizedCallbackAnswer.includes("numéro avec lequel j appelle")
+) {
     state.callbackPhone = state.callerPhone;
 
     setFlowStage(
