@@ -763,7 +763,7 @@ function cleanCityCandidate(value) {
   return city;
 }
 
-function extractCityCandidate(text) {
+function extractCityCandidate(text, allowBareCity = false) {
   const raw = String(text || "")
     .trim()
     .replace(/[.!?;:,]+$/u, "")
@@ -782,11 +782,14 @@ function extractCityCandidate(text) {
   }
 
   const patterns = [
-    /(?:je suis|c['’]est|ça se trouve|ca se trouve|l'installation est|l intervention est)\s+(?:à|a|sur)\s+([\p{L}'’\- ]{2,70})/iu,
-    /(?:ville|commune)\s+(?:c['’]est|est)?\s*(?:à|a|sur)?\s*([\p{L}'’\- ]{2,70})/iu,
-    /^(?:à|a|sur)\s+([\p{L}'’\- ]{2,70})$/iu,
-    /^([\p{L}'’\- ]{2,70})$/u,
-  ];
+  /(?:je suis|j'habite|j’habite|c['’]est|ça se trouve|ca se trouve|l'installation est|l intervention est)\s+(?:à|a|sur)\s+([\p{L}'’\- ]{2,70})/iu,
+  /(?:ville|commune)\s+(?:c['’]est|est)?\s*(?:à|a|sur)?\s*([\p{L}'’\- ]{2,70})/iu,
+  /^(?:à|a|sur)\s+([\p{L}'’\- ]{2,70})$/iu,
+];
+
+if (allowBareCity) {
+  patterns.push(/^([\p{L}'’\- ]{2,70})$/u);
+}
 
   for (const pattern of patterns) {
     const match = raw.match(pattern);
@@ -2298,7 +2301,7 @@ if (flowStageAtTurnStart === "customer_status") {
           // V2.9 : une ville demandée ou corrigée vient de la transcription client.
           // Une correction remplace immédiatement l'ancienne ville.
           if (flowStageAtTurnStart === "city" || callerCorrectsCity(callerMessage)) {
-            const cityCandidate = extractCityCandidate(callerMessage);
+            const cityCandidate = extractCityCandidate(callerMessage, true);
 
             if (cityCandidate) {
               const previousCity = state.interventionCity;
