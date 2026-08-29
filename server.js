@@ -2407,10 +2407,18 @@ if (flowStageAtTurnStart === "customer_status") {
   const normalizedAddressAnswer = normalizeText(callerMessage);
 
   if (
-    state.knownCustomerAddress &&
-    (normalizedAddressAnswer === "oui" ||
-      normalizedAddressAnswer.startsWith("oui "))
-  ) {
+  state.knownCustomerAddress &&
+  (
+    normalizedAddressAnswer === "oui" ||
+    normalizedAddressAnswer.startsWith("oui ") ||
+    normalizedAddressAnswer.includes("meme adresse") ||
+    normalizedAddressAnswer.includes("même adresse") ||
+    normalizedAddressAnswer.includes("toujours la meme") ||
+    normalizedAddressAnswer.includes("toujours la même") ||
+    normalizedAddressAnswer.includes("c est chez moi") ||
+    normalizedAddressAnswer.includes("c'est chez moi")
+  )
+) {
     state.interventionAddress = state.knownCustomerAddress;
 
     setFlowStage(
