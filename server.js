@@ -1753,6 +1753,18 @@ if (customerContext.known) {
     }
 
   if (state.flowStage === "qualification") {
+   if (state.serviceIntent === "entretien") {
+  setFlowStage(
+    "address",
+    "entretien climatisation : aucune qualification technique nécessaire"
+  );
+
+  return {
+    stage: "address",
+    instructions:
+      "La demande concerne un entretien de climatisation. Ne posez aucune question de diagnostic ou de panne. Passez directement aux informations nécessaires pour organiser le rappel ou l’intervention, sans inventer de rendez-vous."
+  };
+}
   const maxQualificationQuestions =
     state.explicitEquipment === "chambre froide" ? 4 : 2;
 
