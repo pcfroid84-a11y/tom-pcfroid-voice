@@ -17,6 +17,9 @@ replaceOnce(
   "https://pcfroid84.app.n8n.cloud/webhook/tom-appel";
 `,
 `import { buildCallEndPayload } from "./call-end-payload.mjs";
+import { loadKnowledgeContext } from "./knowledge-loader.mjs";
+
+const PCFROID_KNOWLEDGE_CONTEXT = await loadKnowledgeContext();
 
 const N8N_WEBHOOK_URL =
   process.env.N8N_WEBHOOK_URL ||
@@ -25,7 +28,7 @@ const N8N_CALL_END_WEBHOOK_URL =
   process.env.N8N_CALL_END_WEBHOOK_URL ||
   "https://pcfroid84.app.n8n.cloud/webhook/tom-fin-appel";
 `,
-"URL webhook fin d'appel + payload V1"
+"URL webhook fin d'appel + payload V1 + connaissances"
 );
 
 replaceOnce(
@@ -94,6 +97,12 @@ replaceOnce(
           if (!state.identityKnown && !earlyCityCapturedWhileIdentity) {
             let detectedName = null;`,
 "protection ville prise pour identité"
+);
+
+replaceOnce(
+`        instructions: SYSTEM_PROMPT,`,
+`        instructions: SYSTEM_PROMPT + PCFROID_KNOWLEDGE_CONTEXT,`,
+"injection base de connaissances PC Froid"
 );
 
 replaceOnce(
