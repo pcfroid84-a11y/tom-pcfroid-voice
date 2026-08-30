@@ -16,14 +16,16 @@ replaceOnce(
   process.env.N8N_WEBHOOK_URL ||
   "https://pcfroid84.app.n8n.cloud/webhook/tom-appel";
 `,
-`const N8N_WEBHOOK_URL =
+`import { buildCallEndPayload } from "./call-end-payload.mjs";
+
+const N8N_WEBHOOK_URL =
   process.env.N8N_WEBHOOK_URL ||
   "https://pcfroid84.app.n8n.cloud/webhook/tom-appel";
 const N8N_CALL_END_WEBHOOK_URL =
   process.env.N8N_CALL_END_WEBHOOK_URL ||
   "https://pcfroid84.app.n8n.cloud/webhook/tom-fin-appel";
 `,
-"URL webhook fin d'appel"
+"URL webhook fin d'appel + payload V1"
 );
 
 replaceOnce(
@@ -34,6 +36,7 @@ replaceOnce(
     routingUrgency: null,
     callerMessages: [],
     callEndSent: false,
+    callStartedAt: new Date().toISOString(),
     identityKnown: false,`,
 "état fin d'appel"
 );
@@ -60,76 +63,20 @@ replaceOnce(
 
 replaceOnce(
 `  function setFlowStage(nextStage, reason = "") {`,
-`  function normalizeCallEndPhone(phone) {
-    const raw = String(phone || "").trim().replace(/[^\\d+]/g, "");
-    if (!raw) return null;
-    if (raw.startsWith("+")) return raw;
-    if (raw.startsWith("0033")) return "+33" + raw.slice(4);
-    if (raw.startsWith("0") && raw.length === 10) return "+33" + raw.slice(1);
-    return raw;
-  }
-
-  function buildCallEndCategory() {
-    const urgencyText = String(state.routingUrgency ?? "").toLowerCase();
-    const urgencyNumber = Number(state.routingUrgency);
-    const isUrgent =
-      urgencyText.includes("urgent") ||
-      (Number.isFinite(urgencyNumber) && urgencyNumber >= 2);
-
-    if (isUrgent) return "URGENCE";
-    if (state.partnerOrSupplierFlow) return "PARTENAIRE";
-    if (state.customerStatus === "existing") return "CLIENT";
-    if (state.customerStatus === "new") return "PROSPECT";
-    return "MESSAGE";
-  }
-
-  function buildCallEndReason() {
-    const equipment = state.explicitEquipment || "équipement non précisé";
-    if (state.serviceIntent === "entretien") return "Entretien " + equipment;
-    if (state.serviceIntent === "devis_installation") return "Devis installation/remplacement " + equipment;
-    if (state.partnerOrSupplierFlow) return "Message partenaire / fournisseur";
-    if (state.outOfCompetenceFlow) return "Demande hors compétence PC Froid";
-    if (state.explicitEquipment) return "Demande concernant " + equipment;
-    return state.routingCategory || "Appel téléphonique";
-  }
-
-  async function sendCallEndWebhook(trigger = "unknown") {
+`  async function sendCallEndWebhook(trigger = "unknown") {
     if (state.callEndSent || !state.callSid) return;
     state.callEndSent = true;
 
-    const phone = normalizeCallEndPhone(state.callbackPhone || state.callerPhone);
-    const category = buildCallEndCategory();
-    const reason = buildCallEndReason();
-    const transcript = state.callerMessages.filter(Boolean).join(" | ").slice(0, 8000);
-    const customerStatus =
-      state.customerStatus === "existing"
-        ? "existing"
-        : state.customerStatus === "new"
-          ? "new"
-          : "unknown";
+    const payload = buildCallEndPayload(state, trigger);
 
-    const smsSummary =
-      category === "PARTENAIRE"
-        ? "PC Froid : merci pour votre appel. Votre message a bien été transmis à l'équipe."
-        : "PC Froid : votre demande a bien été enregistrée. L'équipe vous recontactera si nécessaire. Vous pouvez répondre à ce SMS pour corriger ou compléter une information.";
-
-    const payload = {
-      call_sid: state.callSid,
-      category,
-      urgency: state.routingUrgency ?? "normal",
-      identity: state.identityName || "Non communiquée",
-      phone,
-      customer_status: customerStatus,
-      reason,
-      equipment: state.explicitEquipment || "Non précisé",
-      city: state.interventionCity || "Non précisée",
-      address: state.interventionAddress || state.knownCustomerAddress || "Non précisée",
-      important_information: transcript || "Aucune transcription exploitable",
-      message_to_forward: transcript || reason,
-      sms_summary: smsSummary,
-      routing_category: state.routingCategory,
-      trigger,
-    };
+    // Compatibilité avec le workflow n8n actuel : aucune valeur utile ne doit devenir undefined.
+    payload.identity = payload.identity || "Non communiquée";
+    payload.equipment = payload.equipment || "Non précisé";
+    payload.city = payload.city || "Non précisée";
+    payload.address = payload.address || "Non précisée";
+    payload.important_information =
+      payload.important_information || "Aucune transcription exploitable";
+    payload.message_to_forward = payload.transcript || payload.reason;
 
     try {
       const response = await fetch(N8N_CALL_END_WEBHOOK_URL, {
@@ -143,8 +90,13 @@ replaceOnce(
       }
 
       app.log.info(
-        { callSid: state.callSid, category, trigger },
-        "Fin d'appel envoyée au workflow n8n SMS/mail"
+        {
+          callSid: state.callSid,
+          category: payload.category,
+          trigger,
+          identityConfidence: payload.identity_confidence,
+        },
+        "Fin d'appel envoyée au workflow n8n SMS/mail - schéma V1"
       );
     } catch (error) {
       state.callEndSent = false;
@@ -153,7 +105,7 @@ replaceOnce(
   }
 
   function setFlowStage(nextStage, reason = "") {`,
-"fonction webhook fin d'appel"
+"fonction webhook fin d'appel V1"
 );
 
 replaceOnce(
