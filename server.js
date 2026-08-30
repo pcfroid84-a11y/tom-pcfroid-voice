@@ -2503,6 +2503,16 @@ if (
          if (flowStageAtTurnStart === "address") {
   const normalizedAddressAnswer = normalizeText(callerMessage);
           const addressLooksPlausible =
+           const differentAddressStated =
+  normalizedAddressAnswer === "non" ||
+  normalizedAddressAnswer.startsWith("non ") ||
+  normalizedAddressAnswer.includes("pas la meme adresse") ||
+  normalizedAddressAnswer.includes("pas la même adresse") ||
+  normalizedAddressAnswer.includes("une autre adresse") ||
+  normalizedAddressAnswer.includes("autre adresse") ||
+  normalizedAddressAnswer.includes("pas chez moi") ||
+  normalizedAddressAnswer.includes("ce n est pas chez moi") ||
+  normalizedAddressAnswer.includes("ce n'est pas chez moi");
   /\d/.test(callerMessage) ||
   /\b(rue|avenue|av|boulevard|bd|chemin|route|impasse|allée|allee|place|lotissement|résidence|residence|zone|quartier)\b/i.test(
     callerMessage
@@ -2510,6 +2520,7 @@ if (
 
   if (
   state.knownCustomerAddress &&
+   !differentAddressStated &&
   (
     normalizedAddressAnswer === "oui" ||
     normalizedAddressAnswer.startsWith("oui ") ||
