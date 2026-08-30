@@ -2500,51 +2500,92 @@ if (
             }
           }
 
-         if (flowStageAtTurnStart === "address") {
+  if (flowStageAtTurnStart === "address") {
   const normalizedAddressAnswer = normalizeText(callerMessage);
-          const addressLooksPlausible =
-           const differentAddressStated =
-  normalizedAddressAnswer === "non" ||
-  normalizedAddressAnswer.startsWith("non ") ||
-  normalizedAddressAnswer.includes("pas la meme adresse") ||
-  normalizedAddressAnswer.includes("pas la même adresse") ||
-  normalizedAddressAnswer.includes("une autre adresse") ||
-  normalizedAddressAnswer.includes("autre adresse") ||
-  normalizedAddressAnswer.includes("pas chez moi") ||
-  normalizedAddressAnswer.includes("ce n est pas chez moi") ||
-  normalizedAddressAnswer.includes("ce n'est pas chez moi");
-  /\d/.test(callerMessage) ||
-  /\b(rue|avenue|av|boulevard|bd|chemin|route|impasse|allée|allee|place|lotissement|résidence|residence|zone|quartier)\b/i.test(
-    callerMessage
-  );
+
+  const addressLooksPlausible =
+    /\d/.test(callerMessage) ||
+    /\b(rue|avenue|av|boulevard|bd|chemin|route|impasse|allée|allee|place|lotissement|résidence|residence|zone|quartier)\b/i.test(
+      callerMessage
+    );
+
+  const differentAddressStated =
+    normalizedAddressAnswer === "non" ||
+    normalizedAddressAnswer.startsWith("non ") ||
+    normalizedAddressAnswer.includes("pas la meme adresse") ||
+    normalizedAddressAnswer.includes("pas la même adresse") ||
+    normalizedAddressAnswer.includes("une autre adresse") ||
+    normalizedAddressAnswer.includes("autre adresse") ||
+    normalizedAddressAnswer.includes("pas chez moi") ||
+    normalizedAddressAnswer.includes("ce n est pas chez moi") ||
+    normalizedAddressAnswer.includes("ce n'est pas chez moi");
 
   if (
-  state.knownCustomerAddress &&
-   !differentAddressStated &&
-  (
-    normalizedAddressAnswer === "oui" ||
-    normalizedAddressAnswer.startsWith("oui ") ||
-    normalizedAddressAnswer.includes("meme adresse") ||
-    normalizedAddressAnswer.includes("même adresse") ||
-    normalizedAddressAnswer.includes("toujours la meme") ||
-    normalizedAddressAnswer.includes("toujours la même") ||
-    normalizedAddressAnswer.includes("c est chez moi") ||
-    normalizedAddressAnswer.includes("c'est chez moi")
-  )
-) {
+    state.knownCustomerAddress &&
+    !differentAddressStated &&
+    (
+      normalizedAddressAnswer === "oui" ||
+      normalizedAddressAnswer.startsWith("oui ") ||
+      normalizedAddressAnswer.includes("meme adresse") ||
+      normalizedAddressAnswer.includes("même adresse") ||
+      normalizedAddressAnswer.includes("toujours la meme") ||
+      normalizedAddressAnswer.includes("toujours la même") ||
+      normalizedAddressAnswer.includes("c est chez moi") ||
+      normalizedAddressAnswer.includes("c'est chez moi")
+    )
+  ) {
     state.interventionAddress = state.knownCustomerAddress;
 
     setFlowStage(
       "callback",
       "adresse habituelle confirmée"
     );
+
   } else if (
-  state.knownCustomerAddress &&
-  differentAddressStated &&
-  addressLooksPlausible
-) {
-  state.knownCustomerAddress = null;
-  state.interventionAddress = callerMessage;
+    state.knownCustomerAddress &&
+    differentAddressStated &&
+    addressLooksPlausible
+  ) {
+    state.knownCustomerAddress = null;
+    state.interventionAddress = callerMessage;
+
+    setFlowStage(
+      "callback",
+      "nouvelle adresse d’intervention enregistrée"
+    );
+
+    addSystemContext(
+      `NOUVELLE ADRESSE D'INTERVENTION FOURNIE PAR L'APPELANT : ${callerMessage}. L'ancienne adresse habituelle ne doit pas être utilisée.`
+    );
+
+  } else if (
+    state.knownCustomerAddress &&
+    differentAddressStated
+  ) {
+    state.knownCustomerAddress = null;
+
+    addSystemContext(
+      'L’appelant a indiqué que l’intervention n’est pas à son adresse habituelle. Demandez exactement et uniquement : "Quelle est l’adresse d’intervention ?"'
+    );
+
+  } else if (addressLooksPlausible) {
+    state.interventionAddress = callerMessage;
+
+    setFlowStage(
+      "callback",
+      "adresse d’intervention enregistrée"
+    );
+
+    addSystemContext(
+      `ADRESSE D'INTERVENTION FOURNIE PAR L'APPELANT : ${callerMessage}. Ne modifiez aucun numéro et ne réinventez pas l'adresse.`
+    );
+
+  } else {
+    addSystemContext(
+      'La réponse reçue ne ressemble pas à une adresse d’intervention. Ne l’enregistrez pas comme adresse. Demandez simplement et uniquement : "Quelle est l’adresse d’intervention ?"'
+    );
+  }
+}
 
   setFlowStage(
     "callback",
