@@ -1,5 +1,10 @@
 export async function sendEndCallWebhook({ state, webhookUrl, reason = "call-ended", logger }) {
-  if (!webhookUrl || !state || state.endSummarySent) return false;
+  const targetWebhookUrl =
+    webhookUrl ||
+    process.env.N8N_END_CALL_WEBHOOK_URL ||
+    "https://pcfroid84.app.n8n.cloud/webhook/tom-fin-appel";
+
+  if (!targetWebhookUrl || !state || state.endSummarySent) return false;
 
   state.endSummarySent = true;
 
@@ -37,7 +42,7 @@ export async function sendEndCallWebhook({ state, webhookUrl, reason = "call-end
   };
 
   try {
-    const response = await fetch(webhookUrl, {
+    const response = await fetch(targetWebhookUrl, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
