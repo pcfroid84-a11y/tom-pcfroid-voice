@@ -1,0 +1,68 @@
+{
+  "version": "2026-08-30",
+  "source": "https://www.pcfroid.fr/tarifs",
+  "status": "prepared_requires_business_validation_before_voice_activation",
+  "rules": {
+    "announce_only_if_validated": true,
+    "never_transform_starting_price_into_fixed_price": true,
+    "say_devis_when_site_says_devis": true,
+    "keep_tax_wording_exact_when_relevant": true
+  },
+  "tariffs": [
+    {
+      "service": "Entretien et désinfection de climatisation",
+      "price": "105 €",
+      "condition": "Tarif dégressif dès la deuxième climatisation dans le même logement"
+    },
+    {
+      "service": "Installation de climatisation",
+      "price": "À partir de 1 250 € TTC",
+      "condition": "Tarif indicatif selon configuration ; devis personnalisé"
+    },
+    {
+      "service": "Diagnostic / dépannage de climatisation",
+      "price": "100 € HT jusqu’à 1 heure",
+      "condition": "Déplacement dans le secteur et diagnostic compris ; devis avant réparation complémentaire"
+    },
+    {
+      "service": "Entretien et désinfection d’un système gainable",
+      "price": "129 €",
+      "condition": null
+    },
+    {
+      "service": "Entretien pompe à chaleur air/eau",
+      "price": "159 €",
+      "condition": null
+    },
+    {
+      "service": "Désembouage du circuit hydraulique",
+      "price": "À partir de 350 €",
+      "condition": "Radiateurs ou plancher chauffant"
+    },
+    {
+      "service": "Installation de chambre froide",
+      "price": "Devis sur demande",
+      "condition": null
+    },
+    {
+      "service": "Maintenance annuelle de groupe frigorifique",
+      "price": "À partir de 169 €",
+      "condition": null
+    },
+    {
+      "service": "Révision de groupe frigorifique",
+      "price": "À partir de 239 €",
+      "condition": "Filtres, contrôle et maintenance"
+    },
+    {
+      "service": "Dépannage / réparation de chambre froide",
+      "price": "Devis sur demande",
+      "condition": null
+    },
+    {
+      "service": "Promotion entretien avril et octobre",
+      "price": "-15 %",
+      "condition": "Prestations d’entretien réalisées pendant les mois d’avril et d’octobre"
+    }
+  ]
+}
