@@ -71,4 +71,19 @@ test("construit un payload exploitable pour mémoire, mail et SMS", () => {
   assert.equal(payload.call_complete, true);
   assert.match(payload.sms_summary, /Entretien climatisation/);
   assert.match(payload.mail_subject, /^\[PROSPECT\]/);
+  assert.match(payload.mail_html, /Appel reçu par Tom/);
+});
+
+test("un client qui demande de terminer l'appel produit une fin complète", () => {
+  const payload = buildCallEndPayload(
+    {
+      callSid: "CA_END",
+      callerPhone: "+33700000000",
+      callerRequestedEnd: true,
+      callerMessages: ["Merci, au revoir."],
+    },
+    "socket-close",
+    new Date("2026-08-30T16:00:00.000Z"),
+  );
+  assert.equal(payload.call_complete, true);
 });
