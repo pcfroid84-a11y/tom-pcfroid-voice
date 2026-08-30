@@ -2446,6 +2446,11 @@ if (
 
          if (flowStageAtTurnStart === "address") {
   const normalizedAddressAnswer = normalizeText(callerMessage);
+          const addressLooksPlausible =
+  /\d/.test(callerMessage) ||
+  /\b(rue|avenue|av|boulevard|bd|chemin|route|impasse|allée|allee|place|lotissement|résidence|residence|zone|quartier)\b/i.test(
+    callerMessage
+  );
 
   if (
   state.knownCustomerAddress &&
@@ -2476,14 +2481,7 @@ if (
     addSystemContext(
       "L’appelant a indiqué que l’intervention n’est pas à son adresse habituelle. Demandez uniquement la nouvelle adresse d’intervention."
     );
-  } else if (!state.knownCustomerAddress) {
-    const addressLooksPlausible =
-      /\d/.test(callerMessage) ||
-      /\b(rue|avenue|av|boulevard|bd|chemin|route|impasse|allée|allee|place|lotissement|résidence|residence|zone|quartier)\b/i.test(
-        callerMessage
-      );
-
-    if (addressLooksPlausible) {
+ } else if (addressLooksPlausible) {
       state.interventionAddress = callerMessage;
 
       setFlowStage(
