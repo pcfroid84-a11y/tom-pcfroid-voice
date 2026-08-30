@@ -2587,42 +2587,6 @@ if (
   }
 }
 
-  setFlowStage(
-    "callback",
-    "nouvelle adresse d’intervention enregistrée"
-  );
-
-  addSystemContext(
-    `NOUVELLE ADRESSE D'INTERVENTION FOURNIE PAR L'APPELANT : ${callerMessage}. L'ancienne adresse habituelle ne doit pas être utilisée.`
-  );
-
-} else if (
-  state.knownCustomerAddress &&
-  differentAddressStated
-) {
-  state.knownCustomerAddress = null;
-
-  addSystemContext(
-    'L’appelant a indiqué que l’intervention n’est pas à son adresse habituelle. Demandez exactement et uniquement : "Quelle est l’adresse d’intervention ?"'
-  );
- } else if (addressLooksPlausible) {
-      state.interventionAddress = callerMessage;
-
-      setFlowStage(
-        "callback",
-        "adresse d’intervention enregistrée"
-      );
-
-      addSystemContext(
-        `ADRESSE D'INTERVENTION FOURNIE PAR L'APPELANT : ${callerMessage}. Ne modifiez aucun numéro et ne réinventez pas l'adresse.`
-      );
-    } else {
-      addSystemContext(
-        'La réponse reçue ne ressemble pas à une adresse d’intervention. Ne l’enregistrez pas comme adresse. Demandez simplement et uniquement : "Quelle est l’adresse d’intervention ?"'
-      );
-    }
-  }
-         
          if (flowStageAtTurnStart === "callback") {
   const normalizedCallbackAnswer = normalizeText(callerMessage);
 
