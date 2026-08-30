@@ -1792,7 +1792,7 @@ if (customerContext.known) {
   stage: "address",
   instructions: state.knownCustomerAddress
     ? 'La demande concerne un entretien. Ne posez aucune question technique. Demandez exactement et uniquement : "Est-ce que l’intervention est à la même adresse que d’habitude ?" Puis attendez la réponse.'
-    : 'La demande concerne un entretien. Ne posez aucune question technique. Demandez exactement et uniquement l’adresse complète d’intervention, puis attendez la réponse.'
+   : 'La demande concerne un entretien. Ne posez aucune question technique. Demandez exactement et uniquement : "Quelle est l’adresse d’intervention ?" Puis attendez la réponse.'
 };
 }
   const maxQualificationQuestions =
@@ -1835,7 +1835,7 @@ if (customerContext.known) {
     stage: "address",
     instructions: state.knownCustomerAddress
       ? 'Ne posez plus aucune question technique. Demandez exactement et uniquement : "Est-ce que l’intervention est à la même adresse que d’habitude ?" Puis arrêtez-vous et attendez la réponse.'
-      : "Ne posez plus aucune question technique. Demandez exactement et uniquement : "Quelle est l’adresse d’intervention ?" Une seule question puis attendez la réponse.",
+      : 'Ne posez plus aucune question technique. Demandez exactement et uniquement : "Quelle est l’adresse d’intervention ?" Puis arrêtez-vous et attendez la réponse.',
   };
 }
    if (state.flowStage === "callback") {
@@ -2496,7 +2496,7 @@ if (
       );
     } else {
       addSystemContext(
-        "La réponse reçue ne ressemble pas suffisamment à une adresse d’intervention. Ne l’enregistrez pas comme adresse. Demandez exactement et uniquement : "Quelle est l’adresse d’intervention ?"
+        'La réponse reçue ne ressemble pas à une adresse d’intervention. Ne l’enregistrez pas comme adresse. Demandez simplement et uniquement : "Quelle est l’adresse d’intervention ?"'
       );
     }
   }
