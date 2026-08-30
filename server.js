@@ -1782,6 +1782,19 @@ if (customerContext.known) {
     }
 
   if (state.flowStage === "qualification") {
+   if (state.serviceIntent === "devis_installation") {
+  setFlowStage(
+    "address",
+    "devis installation/remplacement : aucune qualification dépannage nécessaire"
+  );
+
+  return {
+    stage: "address",
+    instructions: state.knownCustomerAddress
+      ? 'La demande concerne un devis d’installation ou de remplacement. Ne posez aucune question de dépannage. Demandez exactement et uniquement : "Est-ce que l’intervention est à la même adresse que d’habitude ?" Puis attendez la réponse.'
+      : 'La demande concerne un devis d’installation ou de remplacement. Ne posez aucune question de dépannage. Demandez exactement et uniquement : "Quelle est l’adresse d’intervention ?" Puis attendez la réponse.'
+  };
+}
    if (state.serviceIntent === "entretien") {
   setFlowStage(
     "address",
@@ -2261,6 +2274,39 @@ if (
     "Motif entretien mémorisé"
   );
 }
+        const installationProjectDetected =
+  (
+    /\bdevis\b/.test(normalizedCallerMessage) &&
+    /\b(install\w*|remplac\w*|nouve\w*|pose\w*)\b/.test(normalizedCallerMessage)
+  ) ||
+  (
+    /\b(je voudrais|j aimerais|on voudrait|nous voudrions)\b/.test(
+      normalizedCallerMessage
+    ) &&
+    /\b(installer|remplacer|changer)\b/.test(normalizedCallerMessage)
+  ) ||
+  (
+    /\b(remplacer|remplacement)\b/.test(normalizedCallerMessage) &&
+    /\b(clim|climatisation|pac|pompe a chaleur|systeme|appareil|installation)\b/.test(
+      normalizedCallerMessage
+    )
+  );
+
+if (installationProjectDetected) {
+  state.serviceIntent = "devis_installation";
+
+  addSystemContext(
+    "MOTIF CONFIRMÉ : l’appelant demande un devis pour une nouvelle installation ou un remplacement. Ne posez aucune question de dépannage sur l’ancien appareil. Ne demandez pas si PC Froid a installé l’équipement existant."
+  );
+
+  app.log.info(
+    {
+      serviceIntent: state.serviceIntent,
+      equipment: state.explicitEquipment,
+    },
+    "Projet installation / remplacement mémorisé"
+  );
+} 
          if (callerIsClosing(callerMessage)) {
   state.callerRequestedEnd = true;
 
