@@ -62,6 +62,41 @@ replaceOnce(
 );
 
 replaceOnce(
+`          if (!state.identityKnown) {
+            let detectedName = null;`,
+`          // Sécurité V1 : si Tom est encore à l'étape identité mais a demandé la ville par erreur,
+          // une réponse comme « Avignon » doit être mémorisée comme ville et jamais comme nom.
+          let earlyCityCapturedWhileIdentity = false;
+          if (
+            !state.identityKnown &&
+            flowStageAtTurnStart === "identity" &&
+            state.awaitingCity &&
+            !state.interventionCity
+          ) {
+            const earlyCity = extractCityCandidate(callerMessage);
+            if (earlyCity) {
+              state.interventionCity = earlyCity;
+              state.cityZoneStatus = classifyServiceArea(earlyCity);
+              state.awaitingCity = false;
+              earlyCityCapturedWhileIdentity = true;
+
+              addSystemContext(
+                \`VILLE D'INTERVENTION DÉJÀ COMPRISE : \${earlyCity}. Ne la redemandez pas. L'identité prénom et nom reste à demander maintenant.\`
+              );
+
+              app.log.info(
+                { city: earlyCity },
+                "Ville captée pendant l'étape identité sans la confondre avec le nom"
+              );
+            }
+          }
+
+          if (!state.identityKnown && !earlyCityCapturedWhileIdentity) {
+            let detectedName = null;`,
+"protection ville prise pour identité"
+);
+
+replaceOnce(
 `  function setFlowStage(nextStage, reason = "") {`,
 `  async function sendCallEndWebhook(trigger = "unknown") {
     if (state.callEndSent || !state.callSid) return;
