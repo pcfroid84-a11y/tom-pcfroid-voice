@@ -2498,7 +2498,6 @@ if (
       );
     }
   }
-}
          
          if (flowStageAtTurnStart === "callback") {
   const normalizedCallbackAnswer = normalizeText(callerMessage);
