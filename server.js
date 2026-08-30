@@ -1937,15 +1937,25 @@ app.log.info(
   },
   "Création contrôlée d'une réponse conversationnelle - V2.10 FLOW LOCK"
 );
-    return sendToOpenAI({
-      type: "response.create",
-      response: {
-        output_modalities: ["audio"],
-        ...(flowLock?.instructions
-          ? { instructions: flowLock.instructions }
-          : {}),
-      },
-    });
+   const identityGuard =
+  state.identityKnown && state.identityName
+    ? `IDENTITÉ VERROUILLÉE : l'identité enregistrée de l'appelant est "${state.identityName}". N'utilisez jamais un autre prénom ou nom. Ne devinez jamais un prénom à partir de la conversation. Il est préférable de rester neutre plutôt que d'appeler le client par son prénom.`
+    : "IDENTITÉ NON CONFIRMÉE : n'appelez jamais l'appelant par un prénom ou un nom tant que son identité n'a pas été explicitement enregistrée.";
+
+const responseInstructions = [
+  flowLock?.instructions,
+  identityGuard,
+]
+  .filter(Boolean)
+  .join("\n\n");
+
+return sendToOpenAI({
+  type: "response.create",
+  response: {
+    output_modalities: ["audio"],
+    instructions: responseInstructions,
+  },
+});
   }
  
   function requestIdentityRecovery() {
