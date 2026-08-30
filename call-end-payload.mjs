@@ -128,7 +128,13 @@ export function buildCallEndPayload(state = {}, trigger = "unknown", now = new D
     business_urgency_confirmed: isExplicitBusinessUrgency(state),
     routing_category: state.routingCategory || null,
 
-    call_complete: Boolean(state.callComplete || state.finalQuestionAsked || state.endCallRequested),
+    call_complete: Boolean(
+      state.callComplete ||
+      state.finalQuestionAsked ||
+      state.callerRequestedEnd ||
+      state.endCallRequested ||
+      state.closingStarted
+    ),
   };
 
   payload.sms_summary = buildSmsSummary({ category, reason, city });
