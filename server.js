@@ -2539,15 +2539,31 @@ if (
       "adresse habituelle confirmée"
     );
   } else if (
-    state.knownCustomerAddress &&
-    (normalizedAddressAnswer === "non" ||
-      normalizedAddressAnswer.startsWith("non "))
-  ) {
-    state.knownCustomerAddress = null;
+  state.knownCustomerAddress &&
+  differentAddressStated &&
+  addressLooksPlausible
+) {
+  state.knownCustomerAddress = null;
+  state.interventionAddress = callerMessage;
 
-    addSystemContext(
-      "L’appelant a indiqué que l’intervention n’est pas à son adresse habituelle. Demandez uniquement la nouvelle adresse d’intervention."
-    );
+  setFlowStage(
+    "callback",
+    "nouvelle adresse d’intervention enregistrée"
+  );
+
+  addSystemContext(
+    `NOUVELLE ADRESSE D'INTERVENTION FOURNIE PAR L'APPELANT : ${callerMessage}. L'ancienne adresse habituelle ne doit pas être utilisée.`
+  );
+
+} else if (
+  state.knownCustomerAddress &&
+  differentAddressStated
+) {
+  state.knownCustomerAddress = null;
+
+  addSystemContext(
+    'L’appelant a indiqué que l’intervention n’est pas à son adresse habituelle. Demandez exactement et uniquement : "Quelle est l’adresse d’intervention ?"'
+  );
  } else if (addressLooksPlausible) {
       state.interventionAddress = callerMessage;
 
