@@ -1,3 +1,5 @@
+import { buildCallEndMailHtml } from "./call-end-mail.mjs";
+
 const UNKNOWN = "Non précisé";
 
 export function normalizePhone(phone) {
@@ -77,7 +79,6 @@ export function buildMailSummary(payload = {}) {
     `Équipement : ${payload.equipment || UNKNOWN}`,
     `Lieu : ${[payload.address, payload.city].filter(Boolean).join(" - ") || UNKNOWN}`,
     `Catégorie : ${payload.category || "MESSAGE"}`,
-    `Informations : ${payload.important_information || "Aucune information complémentaire"}`,
   ].join("\n");
 }
 
@@ -133,6 +134,7 @@ export function buildCallEndPayload(state = {}, trigger = "unknown", now = new D
   payload.sms_summary = buildSmsSummary({ category, reason, city });
   payload.mail_subject = `[${category}] ${reason} - ${payload.identity || payload.phone || "Appel"}`;
   payload.mail_summary = buildMailSummary(payload);
+  payload.mail_html = buildCallEndMailHtml(payload);
 
   return payload;
 }
