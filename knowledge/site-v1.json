@@ -1,10 +1,11 @@
 {
-  "version": "2026-08-30",
-  "status": "prepared_not_connected_to_voice_yet",
+  "version": "2026-08-31",
+  "status": "work_branch_ready_for_voice_test",
   "rules": {
     "only_answer_from_active_entries": true,
     "never_invent_missing_information": true,
-    "prefer_devis_when_price_depends_on_configuration": true
+    "prefer_devis_when_price_depends_on_configuration": true,
+    "never_claim_unverified_photo_or_video": true
   },
   "entries": [
     {
@@ -38,15 +39,45 @@
       "source": "https://www.pcfroid.fr/climatisation"
     },
     {
-      "key": "climatisation_maintenance_scope",
+      "key": "climatisation_maintenance_public_scope",
       "active": true,
-      "answer": "L’entretien peut comprendre nettoyage et désinfection, contrôle du fonctionnement, évacuations de condensats, contrôle visuel et vérification des températures et performances.",
+      "answer": "Le site PC Froid présente l’entretien de climatisation comme un nettoyage et une désinfection accompagnés d’un contrôle de bon fonctionnement. Il précise un nettoyage en profondeur de l’évaporateur et de la turbine pour retirer les saletés qui réduisent le flux d’air et les performances, ainsi qu’une intervention sur le groupe extérieur.",
       "source": "https://www.pcfroid.fr/climatisation"
+    },
+    {
+      "key": "climatisation_maintenance_internal_method",
+      "active": true,
+      "answer": "Pour expliquer concrètement un entretien PC Froid, Tom peut dire que le technicien protège la zone avec une bâche, démonte les habillages nécessaires, nettoie les filtres, l’échangeur et la turbine avec du matériel adapté, désinfecte l’unité, vérifie l’écoulement des condensats lorsque c’est pertinent, remonte et nettoie les habillages, puis contrôle le groupe extérieur et le bon fonctionnement de la climatisation. Selon la machine et l’intervention, le contrôle peut inclure les températures de fonctionnement.",
+      "source": "procedure_interne_validee_2026-08-31"
+    },
+    {
+      "key": "climatisation_maintenance_duration",
+      "active": true,
+      "answer": "Le site PC Froid indique qu’un entretien de climatisation prend généralement environ 30 à 45 minutes par climatiseur.",
+      "source": "https://www.pcfroid.fr/climatisation"
+    },
+    {
+      "key": "climatisation_maintenance_visual",
+      "active": true,
+      "answer": "Si un client veut voir concrètement la méthode, Tom peut l’orienter vers la page Climatisation du site PC Froid : une photo y illustre le nettoyage en profondeur de l’évaporateur et de la turbine. Tom ne doit pas annoncer qu’une vidéo existe tant qu’une vidéo n’est pas explicitement validée dans la base de connaissances.",
+      "source": "https://www.pcfroid.fr/climatisation"
+    },
+    {
+      "key": "maintenance_when_airflow_or_performance_drops",
+      "active": true,
+      "answer": "Si une climatisation souffle moins bien, refroidit moins bien ou semble avoir perdu en performance et que l’entretien n’a pas été réalisé depuis longtemps, un entretien complet est une bonne première étape. Il permet de nettoyer la machine et de contrôler son fonctionnement dans de bonnes conditions. Tom ne doit jamais garantir que l’entretien supprimera une panne : si le problème persiste ou si le symptôme est important, un diagnostic technique peut être nécessaire.",
+      "source": "procedure_interne_validee_2026-08-31"
+    },
+    {
+      "key": "maintenance_vs_breakdown",
+      "active": true,
+      "answer": "Si le client signale qu’il n’y a plus de froid du tout, un code défaut, une fuite, un bruit anormal ou un dysfonctionnement marqué, Tom doit préciser qu’un problème technique peut aussi être en cause. L’entretien peut être pertinent s’il est en retard, mais il ne remplace pas un diagnostic de panne lorsque le symptôme le justifie.",
+      "source": "procedure_interne_validee_2026-08-31"
     },
     {
       "key": "climatisation_troubleshooting",
       "active": true,
-      "answer": "PC Froid réalise notamment diagnostic de panne, contrôle du circuit frigorifique, recherche de fuite, intervention sur le fluide si nécessaire, contrôle des condensats et remplacement de pièces défectueuses.",
+      "answer": "PC Froid réalise notamment le diagnostic de panne de climatisation et peut intervenir sur le circuit frigorifique, rechercher une fuite, intervenir sur le fluide si nécessaire et remplacer des pièces défectueuses selon le diagnostic.",
       "source": "https://www.pcfroid.fr/climatisation"
     },
     {
