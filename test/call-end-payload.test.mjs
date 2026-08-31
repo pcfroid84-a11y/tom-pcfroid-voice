@@ -69,7 +69,10 @@ test("construit un payload exploitable pour mémoire, mail et SMS", () => {
   assert.equal(payload.reason, "Entretien climatisation");
   assert.equal(payload.city, "Avignon");
   assert.equal(payload.call_complete, true);
-  assert.match(payload.sms_summary, /Entretien climatisation/);
+  assert.match(payload.sms_summary, /Nicolas Garcia/);
+  assert.match(payload.sms_summary, /demande d’entretien de climatisation à Avignon/);
+  assert.match(payload.sms_summary, /vous recontacte au plus vite/);
+  assert.match(payload.sms_summary, /répondre à ce SMS pour corriger ou compléter/);
   assert.match(payload.mail_subject, /^\[PROSPECT\]/);
   assert.match(payload.mail_html, /Appel reçu par Tom/);
 });
