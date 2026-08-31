@@ -7,11 +7,14 @@ Chaque scénario doit être testé sur un vrai appel. Pour chacun, vérifier : c
 Client : « Je voudrais prendre rendez-vous pour l'entretien de ma clim. »
 
 Attendu :
+- Tom ne demande pas de date ni de disponibilité à ce stade ;
+- il demande d'abord si la personne est déjà cliente ;
 - statut prospect ;
 - identité correctement captée ;
 - ville puis adresse ;
 - catégorie `PROSPECT`, jamais `URGENCE` ;
 - motif `Entretien climatisation` ;
+- en fin d'appel, Tom rassure : la demande est enregistrée et l'équipe rappellera pour convenir d'un créneau selon les disponibilités du client ;
 - mail lisible ;
 - SMS avec motif + ville ;
 - mémoire complète.
@@ -21,7 +24,8 @@ Attendu :
 Attendu :
 - ne pas redemander inutilement toutes les informations connues ;
 - vérifier naturellement le lieu d'intervention en fin de parcours ;
-- catégorie `CLIENT`.
+- catégorie `CLIENT` ;
+- conclusion rassurante adaptée à l'entretien.
 
 ## 3. Dépannage climatisation particulier
 
@@ -40,7 +44,7 @@ Attendu :
 - détecter professionnel + froid commercial ;
 - identifier le caractère potentiellement prioritaire ;
 - appliquer uniquement les règles d'urgence PC Froid validées ;
-- transfert humain si la règle le prévoit ;
+- transfert humain si la règle le prévoit et si le transfert est réellement activé ;
 - mail clairement marqué urgent uniquement si confirmé.
 
 ## 5. Personne difficile à comprendre
@@ -48,10 +52,11 @@ Attendu :
 Accent, personne âgée, mauvaise ligne ou formulation confuse.
 
 Attendu :
-- une reformulation ;
+- première incompréhension : excuse + reformulation naturelle adaptée à l'information demandée ;
+- ne jamais répéter mécaniquement exactement la même question ;
+- ne jamais dire « merci pour cette confirmation » si la transcription est douteuse ;
 - au maximum une seconde tentative ;
-- si le motif reste incertain : « Je préfère vous passer quelqu'un de l'équipe qui pourra mieux vous répondre. Ne quittez pas, je vous transfère. » ;
-- si personne ne répond : prise de coordonnées + rappel ;
+- si le motif reste incertain : reprise humaine lorsque le transfert réel est activé ; sinon conservation de la demande et rappel par l'équipe ;
 - aucune invention de motif.
 
 ## 6. Question tarifaire
@@ -115,6 +120,7 @@ Donner volontairement une ville au moment où Tom attend un nom, puis donner un 
 
 Attendu :
 - ne jamais considérer une ville identique à la ville d'intervention comme identité fiable ;
+- la première réponse invalide déclenche une reformulation naturelle du type « Excusez-moi, je n’ai pas pu interpréter correctement ce que vous avez dit… » ;
 - mail et mémoire doivent afficher `Identité à confirmer` si elle n'a pas été corrigée.
 
 ## 15. Fin d'appel
@@ -122,3 +128,35 @@ Attendu :
 Tester « au revoir », silence, raccrochage client et fin normale.
 
 Attendu : un seul événement de fin d'appel, un seul mail et un seul SMS. Aucun doublon entre `twilio-stop` et `socket-close`.
+
+## 16. « Allô ? » après l'accueil
+
+Dire seulement « Allô ? » ou provoquer une première transcription inexploitable.
+
+Attendu :
+- Tom ne reste jamais silencieux ;
+- sur « Allô ? » : réponse courte du type « Oui, je vous écoute. Que puis-je faire pour vous ? » ;
+- sur une transcription inexploitable : excuse courte + demande de reformulation ;
+- ne pas lancer prématurément le parcours client si le motif n'est pas encore compris.
+
+## 17. Détails d'un entretien de climatisation
+
+Client : « Qu'est-ce que vous faites exactement pendant l'entretien ? »
+
+Attendu :
+- explication claire : protection par bâche, démontage des habillages nécessaires, nettoyage filtres/échangeur/turbine, désinfection, condensats lorsque pertinent, groupe extérieur et contrôle de fonctionnement ;
+- mention possible du contrôle des températures selon la machine et l'intervention ;
+- durée indicative publique : environ 30 à 45 minutes par climatiseur ;
+- si le client veut voir la méthode : orientation vers la page Climatisation de pcfroid.fr où une photo est disponible ;
+- ne jamais inventer une vidéo.
+
+## 18. Entretien ou panne ?
+
+Client : « Ma clim souffle moins bien / elle fait moins de froid et ça fait longtemps que je n'ai pas fait l'entretien. »
+
+Attendu :
+- expliquer qu'un entretien complet est une bonne première étape si l'entretien est ancien ;
+- expliquer qu'il permet de nettoyer et de contrôler la machine dans de bonnes conditions ;
+- ne jamais garantir que l'entretien réparera la panne ;
+- si absence totale de froid, défaut, fuite, bruit anormal ou symptôme important : préciser qu'un diagnostic technique peut être nécessaire ;
+- garder un ton rassurant et professionnel.
