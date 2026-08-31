@@ -53,14 +53,39 @@ export function getIdentity(state = {}) {
   return { value: identity, confidence: "confirmed_state" };
 }
 
-export function buildSmsSummary({ category, reason, city } = {}) {
+function formatSmsRequest(reason) {
+  const value = String(reason || "").trim();
+  if (!value || value === "Appel téléphonique") return "";
+
+  if (value === "Entretien") return " d’entretien";
+  if (value.startsWith("Entretien ")) {
+    return ` d’entretien de ${value.slice("Entretien ".length)}`;
+  }
+
+  if (value === "Devis installation/remplacement") {
+    return " de devis pour une installation ou un remplacement";
+  }
+  if (value.startsWith("Devis installation/remplacement ")) {
+    return ` de devis pour l’installation ou le remplacement de ${value.slice("Devis installation/remplacement ".length)}`;
+  }
+
+  if (value.startsWith("Demande concernant ")) {
+    return ` concernant ${value.slice("Demande concernant ".length)}`;
+  }
+
+  return ` concernant ${value.charAt(0).toLowerCase()}${value.slice(1)}`;
+}
+
+export function buildSmsSummary({ category, reason, city, identity } = {}) {
   if (category === "PARTENAIRE") {
     return "PC Froid : merci pour votre appel. Votre message a bien été transmis à l'équipe.";
   }
 
+  const person = identity && identity !== "Non communiquée" ? `${identity}, ` : "";
+  const request = formatSmsRequest(reason);
   const location = city && city !== UNKNOWN ? ` à ${city}` : "";
-  const request = reason && reason !== "Appel téléphonique" ? ` (${reason}${location})` : location;
-  return `PC Froid : votre demande${request} a bien été enregistrée. Vous pouvez répondre à ce SMS pour corriger ou compléter une information.`;
+
+  return `PC Froid : ${person}votre demande${request}${location} a bien été enregistrée. L’équipe PC Froid vous recontacte au plus vite pour donner suite à votre demande. Vous pouvez répondre à ce SMS pour corriger ou compléter une information.`;
 }
 
 export function buildMailSummary(payload = {}) {
@@ -137,7 +162,12 @@ export function buildCallEndPayload(state = {}, trigger = "unknown", now = new D
     ),
   };
 
-  payload.sms_summary = buildSmsSummary({ category, reason, city });
+  payload.sms_summary = buildSmsSummary({
+    category,
+    reason,
+    city,
+    identity: payload.identity,
+  });
   payload.mail_subject = `[${category}] ${reason} - ${payload.identity || payload.phone || "Appel"}`;
   payload.mail_summary = buildMailSummary(payload);
   payload.mail_html = buildCallEndMailHtml(payload);
