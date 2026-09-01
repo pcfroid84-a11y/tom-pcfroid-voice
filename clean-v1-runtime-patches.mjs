@@ -7,7 +7,7 @@ const patches = [];
 patches.push(
   patch(
     `} from "./conversation-guidance.mjs";\n\nconst PCFROID_KNOWLEDGE_CONTEXT`,
-    `} from "./conversation-guidance.mjs";\nimport {\n  classifyExpectedFieldTurn,\n  detectServiceIntent,\n  extractCustomerStatusClean,\n  extractIdentityClean,\n  finalAnswerKind,\n  isQuestionAnnouncement,\n  looksLikeLateralQuestion,\n  normalizeCleanText,\n  relationshipProvesExistingCustomer,\n} from "./clean-v1-core.mjs";\nimport {\n  classifySectorRequest,\n  extractPostalCode,\n  getSectorService,\n  sectorStatusToZone,\n} from "./sector-rules.mjs";\n\nconst PCFROID_KNOWLEDGE_CONTEXT`,
+    `} from "./conversation-guidance.mjs";\nimport {\n  classifyExpectedFieldTurn,\n  detectServiceIntent,\n  extractCustomerStatusClean,\n  extractIdentityClean,\n  extractYesNoClean,\n  finalAnswerKind,\n  isPlausibleFrenchLocationText,\n  isQuestionAnnouncement,\n  looksLikeLateralQuestion,\n  normalizeCleanText,\n  relationshipProvesExistingCustomer,\n} from "./clean-v1-core.mjs";\nimport {\n  classifySectorRequest,\n  extractPostalCode,\n  getSectorService,\n  sectorStatusToZone,\n} from "./sector-rules.mjs";\n\nconst PCFROID_KNOWLEDGE_CONTEXT`,
     "imports du contrôleur propre",
   ),
 );
@@ -23,7 +23,7 @@ patches.push(
 patches.push(
   patch(
     `function maskPhone(phone) {\n  if (!phone) return null;\n  const value = String(phone);\n  if (value.length <= 4) return "****";\n  return \`${'${value.slice(0, 3)}'}***${'${value.slice(-3)}'}\`;\n}`,
-    `function maskPhone(phone) {\n  if (!phone) return null;\n  const value = String(phone);\n  if (value.length <= 4) return "****";\n  return \`${'${value.slice(0, 3)}'}***${'${value.slice(-3)}'}\`;\n}\n\nfunction normalizeCallerPhone(value = "") {\n  let digits = String(value || "").replace(/\\D/g, "");\n  if (digits.startsWith("00")) digits = digits.slice(2);\n  if (digits.startsWith("0") && digits.length === 10) digits = "33" + digits.slice(1);\n  return digits;\n}\n\nfunction getConfiguredTestClient(phone) {\n  const configured = normalizeCallerPhone(process.env.TOM_TEST_CLIENT_PHONE || "");\n  const caller = normalizeCallerPhone(phone);\n  if (!configured || !caller || configured !== caller) return null;\n\n  const name = String(process.env.TOM_TEST_CLIENT_NAME || "").trim();\n  const firstName = String(process.env.TOM_TEST_CLIENT_FIRST_NAME || name.split(/\\s+/)[0] || "").trim();\n  const address = String(process.env.TOM_TEST_CLIENT_ADDRESS || "").trim() || null;\n  if (!name) return null;\n  return { name, firstName, address };\n}\n\nfunction pendingQuestionForStage(stage, state) {\n  if (stage === "customer_status") return "Est-ce que vous êtes déjà client chez P C Froid ?";\n  if (stage === "identity") return state.customerStatus === "existing" ? "À quel nom est le dossier ?" : "Pouvez-vous me donner votre prénom et votre nom, s’il vous plaît ?";\n  if (stage === "city") return state.awaitingPostalCode ? "Quel est le code postal de l’installation ?" : "Dans quelle ville se trouve l’installation ?";\n  if (stage === "address") return state.knownCustomerAddress ? "Est-ce que l’intervention est à la même adresse que d’habitude ?" : "Quelle est l’adresse d’intervention ?";\n  if (stage === "callback") return "On peut vous rappeler sur le numéro avec lequel vous appelez ?";\n  if (stage === "callback_number") return "Quel numéro je note pour vous rappeler ?";\n  return null;\n}\n\nfunction validExpectedAnswerForStage(stage, text, state) {\n  if (stage === "customer_status") return Boolean(extractCustomerStatusClean(text));\n  if (stage === "identity") return Boolean(extractIdentityClean(text));\n  if (stage === "city") return state.awaitingPostalCode ? Boolean(extractPostalCode(text)) : Boolean(extractCityCandidate(text, true));\n  if (stage === "address") {\n    const normalized = normalizeCleanText(text);\n    if (state.knownCustomerAddress && /^(oui|non)\\b/.test(normalized)) return true;\n    return /\\d/.test(text) || /\\b(rue|avenue|av|boulevard|bd|chemin|route|impasse|allee|allée|place|lotissement|residence|résidence|zone|quartier)\\b/i.test(text);\n  }\n  if (stage === "callback") return /^(oui|non)\\b/.test(normalizeCleanText(text));\n  if (stage === "callback_number") return String(text || "").replace(/\\D/g, "").length >= 10;\n  return false;\n}`,
+    `function maskPhone(phone) {\n  if (!phone) return null;\n  const value = String(phone);\n  if (value.length <= 4) return "****";\n  return \`${'${value.slice(0, 3)}'}***${'${value.slice(-3)}'}\`;\n}\n\nfunction normalizeCallerPhone(value = "") {\n  let digits = String(value || "").replace(/\\D/g, "");\n  if (digits.startsWith("00")) digits = digits.slice(2);\n  if (digits.startsWith("0") && digits.length === 10) digits = "33" + digits.slice(1);\n  return digits;\n}\n\nfunction getConfiguredTestClient(phone) {\n  const configured = normalizeCallerPhone(process.env.TOM_TEST_CLIENT_PHONE || "");\n  const caller = normalizeCallerPhone(phone);\n  if (!configured || !caller || configured !== caller) return null;\n\n  const name = String(process.env.TOM_TEST_CLIENT_NAME || "").trim();\n  const firstName = String(process.env.TOM_TEST_CLIENT_FIRST_NAME || name.split(/\\s+/)[0] || "").trim();\n  const address = String(process.env.TOM_TEST_CLIENT_ADDRESS || "").trim() || null;\n  if (!name) return null;\n  return { name, firstName, address };\n}\n\nfunction pendingQuestionForStage(stage, state) {\n  if (stage === "customer_status") return "Est-ce que vous êtes déjà client chez P C Froid ?";\n  if (stage === "identity") return state.customerStatus === "existing" ? "À quel nom est le dossier ?" : "Pouvez-vous me donner votre prénom et votre nom, s’il vous plaît ?";\n  if (stage === "city") return state.awaitingPostalCode ? "Quel est le code postal de l’installation ?" : "Dans quelle ville se trouve l’installation ?";\n  if (stage === "address") return state.knownCustomerAddress ? "Est-ce que l’intervention est à la même adresse que d’habitude ?" : "Quelle est l’adresse d’intervention ?";\n  if (stage === "callback") return "On peut vous rappeler sur le numéro avec lequel vous appelez ?";\n  if (stage === "callback_number") return "Quel numéro je note pour vous rappeler ?";\n  return null;\n}\n\nfunction validExpectedAnswerForStage(stage, text, state) {\n  if (stage === "customer_status") return Boolean(extractCustomerStatusClean(text));\n  if (stage === "identity") return Boolean(extractIdentityClean(text));\n  if (stage === "city") return state.awaitingPostalCode ? Boolean(extractPostalCode(text)) : Boolean(extractCityCandidate(text, true));\n  if (stage === "address") {\n    const normalized = normalizeCleanText(text);\n    if (state.knownCustomerAddress && /^(oui|non)\\b/.test(normalized)) return true;\n    return /\\d/.test(text) || /\\b(rue|avenue|av|boulevard|bd|chemin|route|impasse|allee|allée|place|lotissement|residence|résidence|zone|quartier)\\b/i.test(text);\n  }\n  if (stage === "callback") return Boolean(extractYesNoClean(text));\n  if (stage === "callback_number") return String(text || "").replace(/\\D/g, "").length >= 10;\n  return false;\n}`,
     "helpers du parcours propre",
   ),
 );
@@ -87,8 +87,8 @@ patches.push(
 patches.push(
   patch(
     `         if (callerIsClosing(callerMessage)) {`,
-    `         if (state.customerStatus === null && relationshipProvesExistingCustomer(callerMessage)) {\n  state.customerStatus = "existing";\n  state.awaitingCustomerStatus = false;\n  setFlowStage(state.identityKnown ? "qualification" : "identity", "relation client déjà prouvée par la phrase");\n  addSystemContext("STATUT CLIENT DÉJÀ PROUVÉ PAR L'APPELANT : client existant. Ne demandez pas s'il est déjà client.");\n  app.log.info({ callerMessage }, "Relation client déjà prouvée : question statut évitée");\n}\n\n         if (callerIsClosing(callerMessage)) {`,
-    "la phrase vous me l'avez installée suffit",
+    `         if (state.customerStatus === null && relationshipProvesExistingCustomer(callerMessage)) {\n  state.customerStatus = "existing";\n  state.awaitingCustomerStatus = false;\n  setFlowStage(state.identityKnown ? "qualification" : "identity", "relation client déjà prouvée par la phrase");\n  addSystemContext("STATUT CLIENT DÉJÀ PROUVÉ PAR L'APPELANT : client existant. Ne demandez pas s'il est déjà client.");\n  app.log.info({ callerMessage }, "Relation client déjà prouvée : question statut évitée");\n}\n\n         if (callerIsClosing(callerMessage) && flowStageAtTurnStart !== "final_question") {`,
+    "la phrase vous me l'avez installée suffit et la fin finale reste spécifique au motif",
   ),
 );
 
@@ -166,6 +166,38 @@ patches.push(
 
 patches.push(
   patch(
+    `         if (flowStageAtTurnStart === "callback") {\n  const normalizedCallbackAnswer = normalizeText(callerMessage);`,
+    `         if (flowStageAtTurnStart === "callback") {\n  const normalizedCallbackAnswer = normalizeText(callerMessage);\n  const cleanCallbackAnswer = extractYesNoClean(callerMessage);`,
+    "oui naturel pour la confirmation de rappel",
+  ),
+);
+
+patches.push(
+  patch(
+    `  normalizedCallbackAnswer === "oui" ||\n  normalizedCallbackAnswer.startsWith("oui ") ||`,
+    `  cleanCallbackAnswer === "yes" ||\n  normalizedCallbackAnswer === "oui" ||\n  normalizedCallbackAnswer.startsWith("oui ") ||`,
+    "bien sûr oui confirme le numéro appelant",
+  ),
+);
+
+patches.push(
+  patch(
+    `    normalizedCallbackAnswer === "non" ||\n    normalizedCallbackAnswer.startsWith("non ")`,
+    `    cleanCallbackAnswer === "no" ||\n    normalizedCallbackAnswer === "non" ||\n    normalizedCallbackAnswer.startsWith("non ")`,
+    "non naturel demande un autre numéro",
+  ),
+);
+
+patches.push(
+  patch(
+    `  } else {\n    nextRecoveryInstruction("callback");\n  }\n}\n\n         if (flowStageAtTurnStart === "callback_number") {`,
+    `  } else {\n    cancelActiveResponse();\n    const callbackRecoveryAttempt = Number(state.recoveryCounts?.callback || 0) + 1;\n    const callbackRecovery = nextRecoveryInstruction("callback");\n    state.recoveryPrompt = null;\n    setTimeout(() => {\n      sendToOpenAI({\n        type: "response.create",\n        response: {\n          output_modalities: ["audio"],\n          instructions: callbackRecovery + (callbackRecoveryAttempt === 1\n            ? ' IMPORTANT : produisez un seul message audio. Commencez immédiatement par « Pardon » et n’ajoutez aucune phrase avant ou après la formulation demandée.'\n            : ' IMPORTANT : produisez un seul message audio et n’ajoutez aucune phrase avant ou après la formulation demandée.'),\n        },\n      });\n    }, 80);\n    return;\n  }\n}\n\n         if (flowStageAtTurnStart === "callback_number") {`,
+    "relance rappel directe sans phrase parasite",
+  ),
+);
+
+patches.push(
+  patch(
     `  const nothingElseToAdd =\n    normalizedFinalAnswer === "non" ||\n    normalizedFinalAnswer === "non merci" ||\n    normalizedFinalAnswer === "c est tout" ||\n    normalizedFinalAnswer === "c'est tout" ||\n    normalizedFinalAnswer === "rien d autre" ||\n    normalizedFinalAnswer === "rien d'autre" ||\n    normalizedFinalAnswer === "ça ira" ||\n    normalizedFinalAnswer === "ca ira" ||\n    normalizedFinalAnswer === "c est bon" ||\n    normalizedFinalAnswer === "c'est bon";\n\n  if (nothingElseToAdd || callerIsClosing(callerMessage)) {`,
     `  const cleanFinalKind = finalAnswerKind(callerMessage);\n  const nothingElseToAdd = cleanFinalKind === "nothing_else" || cleanFinalKind === "followup_then_close";\n\n  if (cleanFinalKind === "followup_then_close") {\n    addSystemContext(\`INFORMATION AJOUTÉE EN FIN D'APPEL : \${callerMessage}. Conservez cette information dans la demande, sans promettre de délai.\`);\n  }\n\n  if (nothingElseToAdd || callerIsClosing(callerMessage)) {`,
     "fin naturelle non c'est bon et rappel demandé",
@@ -175,8 +207,8 @@ patches.push(
 patches.push(
   patch(
     `      "Le client vient de poser une question ou d'ajouter une information après la question finale. Traitez uniquement ce qu'il vient de dire. S'il pose une question, répondez-y brièvement avec uniquement les informations fiables disponibles. Si vous ne connaissez pas la réponse, dites-le simplement sans inventer. S'il ajoute une information, prenez-la en compte sans la reformuler longuement. Ne reposez jamais la question finale. Ensuite, clôturez une seule fois avec une formule courte."`,
-    `      "Le client vient de poser une vraie question ou d'ajouter une information après la question finale. Répondez brièvement avec uniquement les informations fiables, sans inventer. Ne reposez jamais la question finale et ne demandez jamais l'identité à nouveau. Terminez obligatoirement votre réponse par une formule de clôture courte se terminant par : Bonne journée."`,
-    "final followup clôture vraiment l'appel",
+    `      "Le client vient de poser une vraie question ou d'ajouter une information après la question finale. Répondez brièvement avec uniquement les informations fiables, sans inventer. Ne reposez jamais la question finale et ne demandez jamais l'identité à nouveau. Le motif est verrouillé et ne doit jamais être remplacé par un autre service. Ensuite appliquez la clôture correspondant exactement au motif : " + buildReassuringClosingInstructions({ serviceIntent: state.serviceIntent, equipment: state.explicitEquipment })`,
+    "final followup clôture avec le bon motif",
   ),
 );
 
@@ -199,7 +231,7 @@ patches.push(
 patches.push(
   patch(
     `  const spontaneousCity = extractCityCandidate(callerMessage);\n\n  if (spontaneousCity) {\n    state.interventionCity = spontaneousCity;\n    state.cityZoneStatus = classifyServiceArea(spontaneousCity);`,
-    `  const rawSpontaneousCity = extractCityCandidate(callerMessage);\n  const sectorService = getSectorService({ serviceIntent: state.serviceIntent, equipment: state.explicitEquipment, text: state.callerMessages.join(" ") });\n  const sectorDecision = rawSpontaneousCity ? classifySectorRequest({ city: rawSpontaneousCity, service: sectorService, existingCustomer: state.customerStatus === "existing" }) : null;\n  const spontaneousCity = state.customerStatus === "new" && sectorDecision?.status === "unknown" ? null : rawSpontaneousCity;\n\n  if (rawSpontaneousCity && !spontaneousCity) {\n    state.pendingCityCandidate = rawSpontaneousCity;\n    state.awaitingPostalCode = true;\n    app.log.info({ cityCandidate: rawSpontaneousCity }, "Ville incertaine : code postal requis");\n  }\n\n  if (spontaneousCity) {\n    state.interventionCity = sectorDecision?.city || spontaneousCity;\n    state.cityZoneStatus = state.customerStatus === "new" ? sectorStatusToZone(sectorDecision?.status) : classifyServiceArea(spontaneousCity);`,
+    `  const rawSpontaneousCity = extractCityCandidate(callerMessage);\n  const sectorService = getSectorService({ serviceIntent: state.serviceIntent, equipment: state.explicitEquipment, text: state.callerMessages.join(" ") });\n  const sectorDecision = rawSpontaneousCity ? classifySectorRequest({ city: rawSpontaneousCity, service: sectorService, existingCustomer: state.customerStatus === "existing" }) : null;\n  const spontaneousCity = state.customerStatus === "new" && sectorDecision?.status === "unknown" ? null : rawSpontaneousCity;\n\n  if (rawSpontaneousCity && !spontaneousCity) {\n    state.pendingCityCandidate = isPlausibleFrenchLocationText(rawSpontaneousCity) ? rawSpontaneousCity : null;\n    state.awaitingPostalCode = true;\n    app.log.info({ plausibleCandidate: Boolean(state.pendingCityCandidate) }, "Ville incertaine : code postal requis");\n  }\n\n  if (spontaneousCity) {\n    state.interventionCity = sectorDecision?.city || spontaneousCity;\n    state.cityZoneStatus = state.customerStatus === "new" ? sectorStatusToZone(sectorDecision?.status) : classifyServiceArea(spontaneousCity);`,
     "ville spontanée contrôlée par le secteur validé",
   ),
 );
@@ -215,8 +247,8 @@ patches.push(
 patches.push(
   patch(
     `            const cityCandidate = extractCityCandidate(callerMessage, true);`,
-    `            const cityCandidate = extractCityCandidate(callerMessage, true);\n            const sectorService = getSectorService({ serviceIntent: state.serviceIntent, equipment: state.explicitEquipment, text: state.callerMessages.join(" ") });\n            const cleanSectorDecision = cityCandidate ? classifySectorRequest({ city: cityCandidate, service: sectorService, existingCustomer: state.customerStatus === "existing" }) : null;\n            if (cityCandidate && state.customerStatus === "new" && cleanSectorDecision?.status === "unknown") {\n              state.pendingCityCandidate = cityCandidate;\n              state.awaitingPostalCode = true;\n              state.interventionCity = null;\n              setFlowStage("city", "code postal requis pour ville inconnue");\n              sendToOpenAI({ type: "response.create", response: { output_modalities: ["audio"], instructions: 'Dites exactement et uniquement : "Je préfère vérifier pour ne pas me tromper de ville. Quel est le code postal de l’installation ?" Puis attendez la réponse.' } });\n              return;\n            }`,
-    "ville demandée inconnue bascule vers code postal",
+    `            const cityCandidate = extractCityCandidate(callerMessage, true);\n            const sectorService = getSectorService({ serviceIntent: state.serviceIntent, equipment: state.explicitEquipment, text: state.callerMessages.join(" ") });\n            const cleanSectorDecision = cityCandidate ? classifySectorRequest({ city: cityCandidate, service: sectorService, existingCustomer: state.customerStatus === "existing" }) : null;\n            if (cityCandidate && state.customerStatus === "new" && cleanSectorDecision?.status === "unknown") {\n              state.pendingCityCandidate = isPlausibleFrenchLocationText(cityCandidate) ? cityCandidate : null;\n              state.awaitingPostalCode = true;\n              state.interventionCity = null;\n              setFlowStage("city", "code postal requis pour ville inconnue");\n              sendToOpenAI({ type: "response.create", response: { output_modalities: ["audio"], instructions: 'Dites exactement et uniquement : "Je préfère vérifier pour ne pas me tromper de ville. Quel est le code postal de l’installation ?" Puis attendez la réponse.' } });\n              return;\n            }`,
+    "ville demandée inconnue bascule vers code postal sans mémoriser du texte parasite",
   ),
 );
 
