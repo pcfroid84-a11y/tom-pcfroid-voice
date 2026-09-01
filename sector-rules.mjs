@@ -58,10 +58,194 @@ export function getSectorService({ serviceIntent, equipment, text = "" } = {}) {
   return "depannage";
 }
 
+const DIGIT_WORDS = new Map([
+  ["zero", "0"],
+  ["un", "1"],
+  ["une", "1"],
+  ["deux", "2"],
+  ["trois", "3"],
+  ["quatre", "4"],
+  ["cinq", "5"],
+  ["six", "6"],
+  ["sept", "7"],
+  ["huit", "8"],
+  ["neuf", "9"],
+]);
+
+const SMALL_FRENCH = [
+  "zero",
+  "un",
+  "deux",
+  "trois",
+  "quatre",
+  "cinq",
+  "six",
+  "sept",
+  "huit",
+  "neuf",
+  "dix",
+  "onze",
+  "douze",
+  "treize",
+  "quatorze",
+  "quinze",
+  "seize",
+];
+
+function frenchUnder100(number) {
+  if (number < 17) return SMALL_FRENCH[number];
+  if (number < 20) return `dix ${SMALL_FRENCH[number - 10]}`;
+
+  if (number < 70) {
+    const tensNames = {
+      20: "vingt",
+      30: "trente",
+      40: "quarante",
+      50: "cinquante",
+      60: "soixante",
+    };
+    const tens = Math.floor(number / 10) * 10;
+    const unit = number % 10;
+    if (unit === 0) return tensNames[tens];
+    if (unit === 1) return `${tensNames[tens]} et un`;
+    return `${tensNames[tens]} ${SMALL_FRENCH[unit]}`;
+  }
+
+  if (number < 80) {
+    const rest = number - 60;
+    if (rest === 11) return "soixante et onze";
+    return `soixante ${frenchUnder100(rest)}`;
+  }
+
+  const rest = number - 80;
+  if (rest === 0) return "quatre vingt";
+  return `quatre vingt ${frenchUnder100(rest)}`;
+}
+
+const UNDER_100 = new Map();
+for (let number = 0; number < 100; number += 1) {
+  UNDER_100.set(frenchUnder100(number), number);
+}
+
+function cleanNumberTokens(tokens) {
+  return tokens
+    .map((token) => token === "vingts" ? "vingt" : token === "cents" ? "cent" : token)
+    .filter(Boolean);
+}
+
+function parseUnder100(tokens) {
+  const key = cleanNumberTokens(tokens).join(" ");
+  return UNDER_100.has(key) ? UNDER_100.get(key) : null;
+}
+
+function parseUnder1000(tokens) {
+  const cleaned = cleanNumberTokens(tokens).filter((token) => token !== "et" || tokens.length > 1);
+  const centIndex = cleaned.indexOf("cent");
+  if (centIndex === -1) return parseUnder100(cleaned);
+
+  const before = cleaned.slice(0, centIndex);
+  const after = cleaned.slice(centIndex + 1);
+  let hundreds = 1;
+
+  if (before.length) {
+    const parsedHundreds = parseUnder100(before);
+    if (parsedHundreds == null || parsedHundreds < 1 || parsedHundreds > 9) return null;
+    hundreds = parsedHundreds;
+  }
+
+  const remainder = after.length ? parseUnder100(after) : 0;
+  if (remainder == null) return null;
+  return hundreds * 100 + remainder;
+}
+
+function parseFrenchCardinal(tokens) {
+  const cleaned = cleanNumberTokens(tokens);
+  const milleIndex = cleaned.indexOf("mille");
+
+  if (milleIndex !== -1) {
+    const before = cleaned.slice(0, milleIndex);
+    const after = cleaned.slice(milleIndex + 1);
+    const thousands = before.length ? parseUnder100(before) : 1;
+    const remainder = after.length ? parseUnder1000(after) : 0;
+    if (thousands == null || remainder == null || thousands < 1 || thousands > 99) return null;
+    return thousands * 1000 + remainder;
+  }
+
+  return parseUnder1000(cleaned);
+}
+
+const NUMBER_VOCABULARY = new Set([
+  ...SMALL_FRENCH,
+  "vingt",
+  "vingts",
+  "trente",
+  "quarante",
+  "cinquante",
+  "soixante",
+  "cent",
+  "cents",
+  "mille",
+  "et",
+]);
+
+function numericWordRuns(text) {
+  const tokens = normalize(text).split(" ").filter(Boolean);
+  const runs = [];
+  let current = [];
+
+  for (const token of tokens) {
+    if (NUMBER_VOCABULARY.has(token)) {
+      current.push(token);
+    } else if (current.length) {
+      runs.push(current);
+      current = [];
+    }
+  }
+  if (current.length) runs.push(current);
+  return runs;
+}
+
+function postalFromSpokenRun(run) {
+  const cleaned = cleanNumberTokens(run);
+
+  if (cleaned.length === 5 && cleaned.every((token) => DIGIT_WORDS.has(token))) {
+    return cleaned.map((token) => DIGIT_WORDS.get(token)).join("");
+  }
+
+  const cardinal = parseFrenchCardinal(cleaned);
+  if (cardinal != null && cardinal >= 0 && cardinal <= 99999) {
+    const postal = String(cardinal).padStart(5, "0");
+    if (postal.length === 5) return postal;
+  }
+
+  // Les codes postaux sont souvent dictés en deux groupes : « quatre-vingt-quatre, deux cent soixante ».
+  // Même sans pause clairement transcrite, on essaie toutes les coupures 2 chiffres + 3 chiffres.
+  for (let split = 1; split < cleaned.length; split += 1) {
+    const department = parseUnder100(cleaned.slice(0, split));
+    const suffix = parseUnder1000(cleaned.slice(split));
+    if (department == null || suffix == null || department < 0 || department > 99 || suffix < 0 || suffix > 999) {
+      continue;
+    }
+
+    const postal = `${String(department).padStart(2, "0")}${String(suffix).padStart(3, "0")}`;
+    if (postal.length === 5) return postal;
+  }
+
+  return null;
+}
+
 export function extractPostalCode(text = "") {
-  const compact = String(text || "").replace(/(?<=\d)\s+(?=\d)/g, "");
-  const match = compact.match(/\b\d{5}\b/);
-  return match?.[0] || null;
+  const raw = String(text || "");
+  const compact = raw.replace(/(?<=\d)\s+(?=\d)/g, "");
+  const direct = compact.match(/\b\d{5}\b/);
+  if (direct?.[0]) return direct[0];
+
+  for (const run of numericWordRuns(raw)) {
+    const postal = postalFromSpokenRun(run);
+    if (postal) return postal;
+  }
+
+  return null;
 }
 
 function decisionFromEntry(entry, service) {
