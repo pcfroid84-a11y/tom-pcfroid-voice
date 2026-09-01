@@ -39,8 +39,12 @@ test("les correctifs runtime conservent tous les acquis et sécurisent le client
   assert.match(generated, /Question latérale : Tom répond puis reprend l'étape sans la perdre/);
   assert.match(generated, /Parenthèse annoncée : Tom garde l'étape et laisse poser la question/);
   assert.match(generated, /première demande \/ première fois reconnues comme nouveau client/);
+  assert.match(generated, /oui oui et non non reconnus comme statut client/);
   assert.match(generated, /identité non latine ou parasite refusée/);
-  assert.match(generated, /une réponse identité invalide ne repasse pas par le détecteur permissif/);
+  assert.match(generated, /client existant : un seul essai sur le nom puis rappel/);
+  assert.match(generated, /Client existant : nom non compris, Tom n'insiste pas et passe au rappel/);
+  assert.match(generated, /entretien client existant sans dossier : le téléphone suffit pour reprise/);
+  assert.match(generated, /dépannage client existant sans dossier : pas d'interrogatoire d'adresse/);
   assert.match(generated, /Client existant : Tom attend le retour du dossier avant de demander l'adresse/);
   assert.match(generated, /Contexte client existant terminé : reprise du parcours/);
   assert.match(generated, /étapes administratives sans phrases parasites/);
