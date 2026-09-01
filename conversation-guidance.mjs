@@ -26,7 +26,7 @@ export function buildInitialRecoveryInstruction(text = "") {
   const value = normalize(text);
 
   if (value === "allo" || value === "allô") {
-    return 'Dites exactement et uniquement : "Oui, je vous écoute. Que puis-je faire pour vous ?" Puis attendez la réponse.';
+    return 'Dites exactement et uniquement : "Oui, je vous écoute." Puis taisez-vous et laissez l’appelant expliquer sa demande.';
   }
 
   if (
@@ -35,7 +35,7 @@ export function buildInitialRecoveryInstruction(text = "") {
     value === "bonjour oui" ||
     value === "salut"
   ) {
-    return 'Répondez exactement et uniquement : "Bonjour, je vous écoute. Quel est le motif de votre appel ?" Puis attendez la réponse.';
+    return 'Répondez exactement et uniquement : "Bonjour, je vous écoute." Puis taisez-vous et laissez l’appelant expliquer sa demande. Ne posez aucune question.';
   }
 
   return 'Répondez exactement et uniquement : "Excusez-moi, je n’ai pas bien réussi à comprendre votre demande. Pouvez-vous me la reformuler, s’il vous plaît ?" Puis attendez la réponse.';
