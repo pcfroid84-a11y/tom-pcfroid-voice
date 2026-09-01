@@ -1,5 +1,6 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { RUNTIME_PATCHES } from "./runtime-patches.mjs";
+import { CONVERSATION_START_PATCHES } from "./conversation-start-patches.mjs";
 
 const baseLauncherPath = new URL("./start-with-call-end.mjs", import.meta.url);
 const runtimeLauncherPath = new URL("./.tom-launcher-regression-runtime.mjs", import.meta.url);
@@ -10,6 +11,9 @@ if (!launcher.includes(anchor)) {
   throw new Error("Correctif non-régression impossible : ancre launcher introuvable");
 }
 
-launcher = launcher.replace(anchor, RUNTIME_PATCHES + anchor);
+launcher = launcher.replace(
+  anchor,
+  RUNTIME_PATCHES + CONVERSATION_START_PATCHES + anchor,
+);
 await writeFile(runtimeLauncherPath, launcher, "utf8");
 await import(runtimeLauncherPath.href + `?v=${Date.now()}`);
