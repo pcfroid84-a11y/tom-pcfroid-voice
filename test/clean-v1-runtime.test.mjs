@@ -64,6 +64,11 @@ test("toutes les ancres du runtime propre correspondent à l'ancien moteur stabl
       "Transcription d'un tour commencé pendant l'accueil ignorée sans contaminer le tour suivant",
       "Code postal utilisé pour sécuriser le secteur",
       "instructions: buildReassuringClosingInstructions({",
+      "const cleanCallbackAnswer = extractYesNoClean(callerMessage);",
+      "const callbackRecoveryAttempt = Number(state.recoveryCounts?.callback || 0) + 1;",
+      "flowStageAtTurnStart !== \"final_question\"",
+      "isPlausibleFrenchLocationText(cityCandidate)",
+      "Le motif est verrouillé et ne doit jamais être remplacé par un autre service",
     ]) {
       assert.ok(runtime.includes(marker), `marqueur runtime absent : ${marker}`);
     }
