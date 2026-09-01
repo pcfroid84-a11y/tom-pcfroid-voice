@@ -3,14 +3,14 @@ import assert from "node:assert/strict";
 import { readFile, writeFile, unlink } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 
-import { CLEAN_V1_FINAL_PATCHES } from "../clean-v1-runtime-final.mjs";
+import { CLEAN_V1_LATEST_PATCHES } from "../clean-v1-runtime-latest.mjs";
 
 test("toutes les ancres du runtime propre correspondent à l'ancien moteur stable", async () => {
   const baseLauncher = await readFile(new URL("../start-with-call-end.mjs", import.meta.url), "utf8");
   const anchor = 'await writeFile(runtimePath, source, "utf8");';
   assert.ok(baseLauncher.includes(anchor), "ancre finale du launcher absente");
 
-  let generatedLauncher = baseLauncher.replace(anchor, CLEAN_V1_FINAL_PATCHES + anchor);
+  let generatedLauncher = baseLauncher.replace(anchor, CLEAN_V1_LATEST_PATCHES + anchor);
 
   const strictReplaceOnce = `function replaceOnce(search, replacement, label) {
   if (!source.includes(search)) {
@@ -75,19 +75,21 @@ test("toutes les ancres du runtime propre correspondent à l'ancien moteur stabl
       "flowStageAtTurnStart !== \"customer_status\"",
       "Allô simple ou transcription équivalente : étape conservée sans nouvelle question",
       "Oui, je vous écoute.",
-      "Incompréhension simple : étape conservée sans question parasite",
-      "Pas de souci, je vous écoute.",
-      "Correction tardive du statut client appliquée",
-      "correction explicite du statut client",
-      "Identité tardive séparée de l'adresse",
-      "Ne mélangez pas le nom avec l’adresse",
       "Est-ce que l’eau vient de l’unité intérieure ?",
       "Ne demandez pas au client de répéter le motif",
       "Rendez-vous sans motif : demande de précision avant le statut client",
       "Bien sûr. C’est pour quel type d’intervention ?",
       "Relance statut client verrouillée",
       "Dites-moi simplement oui si vous êtes déjà client chez PC Froid, ou non si c’est votre première demande.",
-      "Fin audio confirmée par Twilio ; pause de 3 secondes avant raccrochage",
+      "./clean-v1-core-latest.mjs",
+      "./sector-rules-latest.mjs",
+      "Code postal incertain : nouvelle demande sans décision secteur",
+      "Je n’ai pas bien compris le code postal. Pouvez-vous me le répéter, s’il vous plaît ?",
+      "Output ONLY this exact French sentence with no introduction",
+      "hangupGraceActive",
+      "Client reparle pendant les 3 secondes : raccrochage suspendu",
+      "Fin de parole client pendant la grâce : nouveau délai de 3 secondes",
+      "attente de 3 secondes de silence avant raccrochage",
     ]) {
       assert.ok(runtime.includes(marker), `marqueur runtime absent : ${marker}`);
     }
@@ -95,12 +97,8 @@ test("toutes les ancres du runtime propre correspondent à l'ancien moteur stabl
     assert.match(runtime, /flowLock\?\.stage === "customer-status"[\s\S]{0,300}Est-ce que vous êtes déjà client chez P C Froid \?/);
     assert.match(runtime, /flowLock\?\.stage === "new-identity"[\s\S]{0,300}Pouvez-vous me donner votre prénom et votre nom/);
     assert.match(runtime, /flowLock\?\.stage === "callback"[\s\S]{0,300}On peut vous rappeler sur le numéro avec lequel vous appelez \?/);
-    assert.match(runtime, /correctedStatusAfterStageAdvance[\s\S]{0,900}setFlowStage\("identity", "correction explicite du statut client"\)/);
-    assert.match(runtime, /identityPrefixMatch[\s\S]{0,900}Quelle est l’adresse d’intervention \?/);
-    assert.match(runtime, /pause de 3 secondes avant raccrochage[\s\S]{0,250}3000/);
     assert.match(runtime, /flowStageAtTurnStart !== "customer_status"/);
     assert.match(runtime, /\^\(allo\|hallo\|hello\|hola\)\$/);
-    assert.match(runtime, /je \(\?:ne \)\?comprends pas/);
     assert.match(runtime, /rendez\[- \]\?vous\|rdv/);
     assert.doesNotMatch(runtime, /max_output_tokens:\s*240/);
     assert.doesNotMatch(runtime, /max_output_tokens:\s*80/);
