@@ -51,15 +51,16 @@ test("la deuxième incompréhension peut préparer le transfert lorsqu'il sera a
   assert.match(instruction, /Ne quittez pas, je vous transfère/i);
 });
 
-test("la conclusion entretien rassure sans inventer de rendez-vous", () => {
+test("la conclusion entretien est courte, exacte et sans faux rendez-vous", () => {
   const instruction = buildReassuringClosingInstructions({
     serviceIntent: "entretien",
     equipment: "climatisation",
   });
   assert.match(instruction, /demande d’entretien est bien enregistrée/i);
-  assert.match(instruction, /va vous rappeler/i);
-  assert.match(instruction, /selon vos disponibilités/i);
-  assert.match(instruction, /Ne promettez aucun créneau/i);
+  assert.match(instruction, /vous rappellera pour convenir d’un créneau avec vous/i);
+  assert.match(instruction, /Bonne journée/i);
+  assert.match(instruction, /n’ajoutez aucune autre phrase/i);
+  assert.doesNotMatch(instruction, /rendez-vous confirmé/i);
 });
 
 test("le guide interdit la fausse confirmation et la fausse disponibilité", () => {
