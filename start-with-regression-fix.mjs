@@ -1,6 +1,7 @@
 import { readFile, writeFile } from "node:fs/promises";
 import { RUNTIME_PATCHES } from "./runtime-patches.mjs";
 import { CONVERSATION_START_PATCHES } from "./conversation-start-patches.mjs";
+import { DETOUR_HARDENING_PATCHES } from "./detour-hardening-patches.mjs";
 import { ECHO_GUARD_PATCHES } from "./echo-guard-patches.mjs";
 
 const baseLauncherPath = new URL("./start-with-call-end.mjs", import.meta.url);
@@ -14,7 +15,11 @@ if (!launcher.includes(anchor)) {
 
 launcher = launcher.replace(
   anchor,
-  RUNTIME_PATCHES + CONVERSATION_START_PATCHES + ECHO_GUARD_PATCHES + anchor,
+  RUNTIME_PATCHES +
+    CONVERSATION_START_PATCHES +
+    DETOUR_HARDENING_PATCHES +
+    ECHO_GUARD_PATCHES +
+    anchor,
 );
 await writeFile(runtimeLauncherPath, launcher, "utf8");
 await import(runtimeLauncherPath.href + `?v=${Date.now()}`);
