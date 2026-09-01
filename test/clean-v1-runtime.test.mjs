@@ -69,10 +69,17 @@ test("toutes les ancres du runtime propre correspondent à l'ancien moteur stabl
       "flowStageAtTurnStart !== \"final_question\"",
       "isPlausibleFrenchLocationText(cityCandidate)",
       "Le motif est verrouillé et ne doit jamais être remplacé par un autre service",
+      "const fixedAdministrativeInstruction = (() => {",
+      "Instruction administrative figée",
+      "Aucun mot avant, aucun mot après",
+      "fixedAdministrativeInstruction ? { max_output_tokens: 240 }",
     ]) {
       assert.ok(runtime.includes(marker), `marqueur runtime absent : ${marker}`);
     }
 
+    assert.match(runtime, /flowLock\?\.stage === "customer-status"[\s\S]{0,300}Est-ce que vous êtes déjà client chez P C Froid \?/);
+    assert.match(runtime, /flowLock\?\.stage === "new-identity"[\s\S]{0,300}Pouvez-vous me donner votre prénom et votre nom/);
+    assert.match(runtime, /flowLock\?\.stage === "callback"[\s\S]{0,300}On peut vous rappeler sur le numéro avec lequel vous appelez \?/);
     assert.doesNotMatch(runtime, /ignoreNextGreetingSpeechTranscript/);
 
     const syntax = spawnSync(process.execPath, ["--check", runtimeUrl.pathname], {
