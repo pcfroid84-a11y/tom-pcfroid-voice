@@ -28,7 +28,10 @@ test("les correctifs runtime conservent raccrochage, secteur et protection anti-
   assert.match(generated, /décision secteur selon activité/);
   assert.match(generated, /devis clim simple reconnu comme projet installation/);
   assert.match(generated, /protection anti-écho pendant accueil/);
-  assert.match(generated, /ignore écho bonjour initial/);
+  assert.match(generated, /anti-écho juste après fin audio sans supprimer vraie interruption/);
+  assert.match(generated, /Signal VAD juste après la fin audio : écho probable, Tom n'est pas coupé/);
+  assert.match(generated, /ignore transcription provenant de l'écho d'accueil/);
+  assert.match(generated, /ça ne peut jamais devenir une identité/);
   assert.match(generated, /Nettoyage climatisation classé comme entretien/);
   assert.match(generated, /qualification limitée à une réponse courte/);
   assert.match(generated, /Question latérale : Tom répond puis reprend l'étape sans la perdre/);
