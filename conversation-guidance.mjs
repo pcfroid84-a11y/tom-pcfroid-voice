@@ -84,16 +84,16 @@ export function buildReassuringClosingInstructions({
   }
 
   if (serviceIntent === "entretien") {
-    return 'Clôturez en une seule fois, sans nouvelle question. Rassurez le client avec une formulation naturelle proche de : « Très bien, votre demande d’entretien est bien enregistrée. L’équipe PC Froid va vous rappeler pour convenir avec vous d’un créneau selon vos disponibilités. Bonne journée. » Ne promettez aucun créneau ni délai précis.';
+    return 'Dites exactement et uniquement : "Très bien, votre demande d’entretien est bien enregistrée. L’équipe PC Froid vous rappellera pour convenir d’un créneau avec vous. Bonne journée." Ne posez aucune question et n’ajoutez aucune autre phrase.';
   }
 
   if (serviceIntent === "devis_installation") {
-    return 'Clôturez en une seule fois, sans nouvelle question. Rassurez le client : sa demande de devis ou de projet est bien enregistrée et l’équipe PC Froid va le rappeler pour reprendre le projet avec lui et organiser la suite. Ne promettez aucun délai précis.';
+    return 'Dites exactement et uniquement : "Très bien, votre demande de devis est bien enregistrée. L’équipe PC Froid vous rappellera pour reprendre votre projet avec vous. Bonne journée." Ne posez aucune question et n’ajoutez aucune autre phrase.';
   }
 
   if (equipment) {
-    return `Clôturez en une seule fois, sans nouvelle question. Rassurez le client : sa demande concernant ${equipment} est bien enregistrée et l’équipe PC Froid va la reprendre et le rappeler pour organiser la suite. Ne promettez aucun délai précis.`;
+    return `Dites exactement et uniquement : "Très bien, votre demande concernant ${equipment} est bien enregistrée. L’équipe PC Froid vous rappellera pour organiser la suite. Bonne journée." Ne posez aucune question et n’ajoutez aucune autre phrase.`;
   }
 
-  return 'Clôturez en une seule fois, sans nouvelle question. Indiquez que la demande est bien enregistrée et que l’équipe PC Froid va la reprendre et rappeler le client pour organiser la suite. Ne promettez aucun délai précis.';
+  return 'Dites exactement et uniquement : "Très bien, votre demande est bien enregistrée. L’équipe PC Froid vous rappellera. Bonne journée." Ne posez aucune question et n’ajoutez aucune autre phrase.';
 }
