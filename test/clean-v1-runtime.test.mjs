@@ -3,14 +3,14 @@ import assert from "node:assert/strict";
 import { readFile, writeFile, unlink } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 
-import { CLEAN_V1_PATCHES } from "../clean-v1-runtime-patches.mjs";
+import { CLEAN_V1_FINAL_PATCHES } from "../clean-v1-runtime-final.mjs";
 
 test("toutes les ancres du runtime propre correspondent à l'ancien moteur stable", async () => {
   const baseLauncher = await readFile(new URL("../start-with-call-end.mjs", import.meta.url), "utf8");
   const anchor = 'await writeFile(runtimePath, source, "utf8");';
   assert.ok(baseLauncher.includes(anchor), "ancre finale du launcher absente");
 
-  let generatedLauncher = baseLauncher.replace(anchor, CLEAN_V1_PATCHES + anchor);
+  let generatedLauncher = baseLauncher.replace(anchor, CLEAN_V1_FINAL_PATCHES + anchor);
 
   const strictReplaceOnce = `function replaceOnce(search, replacement, label) {
   if (!source.includes(search)) {
