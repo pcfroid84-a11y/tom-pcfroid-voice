@@ -23,16 +23,16 @@ test("les formulations naturelles du statut client sont comprises", () => {
   for (const text of ["Oui", "Oui oui", "Eh oui", "Et oui", "Ben oui", "Bah oui", "Je suis client", "Vous êtes déjà venus", "J'ai déjà fait appel à vous"]) {
     assert.equal(extractCustomerStatusClean(text), "existing", text);
   }
-  for (const text of ["Non", "Non non", "Première demande", "Première fois", "Je ne suis pas client", "Jamais appelé"]) {
+  for (const text of ["Non", "Enon", "Non non", "Première demande", "C'est ma première demande", "Première fois", "Je ne suis pas client", "Jamais appelé"]) {
     assert.equal(extractCustomerStatusClean(text), "new", text);
   }
 });
 
 test("les oui et non naturels sont compris pour le rappel", () => {
-  for (const text of ["Oui", "Oui oui", "Oui, bien sûr.", "Bien sûr, oui.", "D'accord, oui.", "Euh oui, bien sûr."]) {
+  for (const text of ["Oui", "Oui oui", "Oui, bien sûr.", "Bien sûr, oui.", "D'accord, oui.", "Euh oui, bien sûr.", "Eoui"]) {
     assert.equal(extractYesNoClean(text), "yes", text);
   }
-  for (const text of ["Non", "Non merci", "Euh non, merci."]) {
+  for (const text of ["Non", "Enon", "Non merci", "Euh non, merci."]) {
     assert.equal(extractYesNoClean(text), "no", text);
   }
   assert.equal(extractYesNoClean("Oui mais non"), null);
@@ -62,6 +62,8 @@ test("les identités parasites sont refusées", () => {
   assert.equal(extractIdentityClean("И вы гочи"), null);
   assert.equal(extractIdentityClean("ça"), null);
   assert.equal(extractIdentityClean("Oye, figur"), null);
+  assert.equal(extractIdentityClean("ma première demande"), null);
+  assert.equal(extractIdentityClean("C'est ma première demande"), null);
   assert.equal(extractIdentityClean("Carole Pérez"), "Carole Pérez");
 });
 
