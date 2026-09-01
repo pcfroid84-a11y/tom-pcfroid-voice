@@ -52,17 +52,23 @@ export function extractCustomerStatusClean(text = "") {
 
   if (relationshipProvesExistingCustomer(value)) return "existing";
 
-  if (
-    /^(oui|oui oui|eh oui|et oui|ben oui|bah oui|tout a fait|bien sur|oui bien sur)$/.test(value) ||
-    /\b(deja client|je suis client|je suis deja client|vous etes deja venus?|vous etes deja intervenus?|j'ai deja fait appel a vous)\b/.test(value)
-  ) {
+  if (/\b(deja client|je suis client|je suis deja client|vous etes deja venus?|vous etes deja intervenus?|j'ai deja fait appel a vous)\b/.test(value)) {
     return "existing";
   }
 
-  if (
-    /^(non|non non|non merci)$/.test(value) ||
-    /\b(premiere demande|premiere fois|nouveau client|pas encore client|je ne suis pas client|je suis pas client|jamais appele|jamais fait appel|jamais ete client)\b/.test(value)
-  ) {
+  if (/^(oui|oui oui|eh oui|et oui|ben oui|bah oui|tout a fait|bien sur|oui bien sur)$/.test(value)) {
+    return "existing";
+  }
+
+  if (/^oui\s+(pourquoi|comment|bien sur|d'accord|d accord)\b/.test(value)) {
+    return "existing";
+  }
+
+  if (/\b(premiere demande|premiere fois|nouveau client|pas encore client|je ne suis pas client|je suis pas client|jamais appele|jamais fait appel|jamais ete client)\b/.test(value)) {
+    return "new";
+  }
+
+  if (/^(non|non non|non merci)$/.test(value)) {
     return "new";
   }
 
@@ -71,14 +77,10 @@ export function extractCustomerStatusClean(text = "") {
 
 export function isQuestionAnnouncement(text = "") {
   const value = normalizeCleanText(text);
-  return [
-    "une petite question",
-    "j'ai une question",
-    "j'aurais une question",
-    "je voulais vous poser une question",
-    "je voulais vous demander quelque chose",
-    "je peux vous poser une question",
-  ].includes(value);
+  if (!value) return false;
+
+  return /^(?:j'ai|j'aurais|j aurais)?\s*(?:une )?(?:petite )?question$/.test(value) ||
+    /^(?:je voulais|je voudrais|je peux)\s+vous\s+(?:poser une question|demander quelque chose)$/.test(value);
 }
 
 export function looksLikeLateralQuestion(text = "") {
