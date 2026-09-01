@@ -78,6 +78,8 @@ test("un devis clim simple est classé installation", () => {
 
 test("extraction code postal tolère un espace", () => {
   assert.equal(extractPostalCode("C'est 84 170"), "84170");
+  assert.equal(extractPostalCode("84 260"), "84260");
+  assert.equal(extractPostalCode("84, 260"), "84260");
 });
 
 test("comprend un code postal dicté chiffre par chiffre", () => {
@@ -92,15 +94,24 @@ test("comprend un code postal dicté comme un nombre français", () => {
   );
 });
 
-test("comprend un code postal dicté en deux groupes", () => {
-  assert.equal(
-    extractPostalCode("C'est quatre-vingt-quatre, deux cent soixante."),
-    "84260",
-  );
+test("comprend un code postal dicté sans dire mille", () => {
   assert.equal(
     extractPostalCode("quatre-vingt-quatre deux cent soixante"),
     "84260",
   );
+  assert.equal(
+    extractPostalCode("C'est quatre-vingt-quatre, deux cent soixante."),
+    "84260",
+  );
+});
+
+test("comprend les formes mixtes chiffres et mots", () => {
+  assert.equal(extractPostalCode("84 deux cent soixante"), "84260");
+  assert.equal(extractPostalCode("quatre-vingt-quatre 260"), "84260");
+});
+
+test("ne transforme pas un département seul en faux code postal", () => {
+  assert.equal(extractPostalCode("quatre-vingt-quatre"), null);
 });
 
 test("conserve le zéro initial d'un code postal dicté", () => {
