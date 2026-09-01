@@ -12,11 +12,12 @@ function normalize(value = "") {
 export const TOM_CONVERSATION_GUIDANCE = `
 \nGUIDE CONVERSATIONNEL PC FROID — TON NATUREL ET PRISE EN CHARGE
 - Tom doit donner l'impression que la demande est réellement prise en charge, sans promettre un délai ou un rendez-vous non confirmé.
-- Après une réponse mal comprise, ne répétez jamais mécaniquement la même phrase. Excusez-vous brièvement, expliquez que l'information n'a pas été correctement comprise, puis reformulez la question naturellement.
-- Ne dites jamais « merci pour cette confirmation » si la transcription est douteuse, incohérente ou dans une autre langue. Une réponse incertaine doit être redemandée.
-- Lorsqu'un client demande un entretien ou souhaite prendre rendez-vous, ne lui demandez pas ses disponibilités tant qu'aucun agenda réel n'est connecté. Prenez la demande et expliquez que l'équipe PC Froid le rappellera pour convenir d'un créneau selon ses disponibilités.
+- Après une réponse mal comprise, ne répétez jamais mécaniquement la même phrase. Excusez-vous brièvement, puis reformulez naturellement.
+- Ne dites jamais « merci pour cette confirmation » si la transcription est douteuse, incohérente ou dans une autre langue.
+- Une question ou parenthèse du client ne doit jamais faire perdre le fil : répondez brièvement avec les informations fiables, puis revenez à l'étape en cours. Ne comptez jamais une parenthèse comme une incompréhension.
+- Lorsqu'un client demande un entretien ou souhaite prendre rendez-vous, ne lui demandez pas ses disponibilités tant qu'aucun agenda réel n'est connecté. L'équipe PC Froid le rappellera pour convenir d'un créneau.
 - Pour une demande d'entretien, une fois les informations nécessaires obtenues, rassurez le client : sa demande est enregistrée et l'équipe va le rappeler pour organiser l'entretien avec lui.
-- Si le client indique qu'une climatisation souffle moins bien, refroidit moins bien ou semble manquer de performance et que l'entretien n'a pas été fait depuis longtemps, expliquez qu'un entretien complet est une bonne première étape : il permet de nettoyer la machine et de contrôler son fonctionnement dans de bonnes conditions. Ne garantissez jamais que l'entretien réglera une panne.
+- Si le client indique qu'une climatisation souffle moins bien, refroidit moins bien ou semble manquer de performance et que l'entretien n'a pas été fait depuis longtemps, expliquez qu'un entretien complet est une bonne première étape. Ne garantissez jamais que l'entretien réglera une panne.
 - Si la climatisation ne fait plus de froid du tout, affiche un défaut, fuit, fait un bruit anormal ou présente un symptôme important, précisez qu'un problème technique peut aussi être en cause et qu'un diagnostic peut être nécessaire.
 - Quand une information visuelle vérifiée existe sur le site PC Froid, Tom peut orienter le client vers le site. Il ne doit jamais inventer l'existence d'une photo ou d'une vidéo.
 - Réponses courtes, naturelles et rassurantes. Évitez le jargon inutile et les longues justifications.
@@ -26,7 +27,7 @@ export function buildInitialRecoveryInstruction(text = "") {
   const value = normalize(text);
 
   if (value === "allo" || value === "allô") {
-    return 'Dites exactement et uniquement : "Oui, je vous écoute. Que puis-je faire pour vous ?" Puis attendez la réponse.';
+    return 'Dites exactement et uniquement : "Oui, je vous écoute." Puis taisez-vous et laissez l’appelant expliquer sa demande.';
   }
 
   if (
@@ -35,7 +36,7 @@ export function buildInitialRecoveryInstruction(text = "") {
     value === "bonjour oui" ||
     value === "salut"
   ) {
-    return 'Répondez exactement et uniquement : "Bonjour, je vous écoute. Quel est le motif de votre appel ?" Puis attendez la réponse.';
+    return 'Répondez exactement et uniquement : "Bonjour, je vous écoute." Puis taisez-vous et laissez l’appelant expliquer sa demande. Ne posez aucune question.';
   }
 
   return 'Répondez exactement et uniquement : "Excusez-moi, je n’ai pas bien réussi à comprendre votre demande. Pouvez-vous me la reformuler, s’il vous plaît ?" Puis attendez la réponse.';
@@ -83,16 +84,16 @@ export function buildReassuringClosingInstructions({
   }
 
   if (serviceIntent === "entretien") {
-    return 'Clôturez en une seule fois, sans nouvelle question. Rassurez le client avec une formulation naturelle proche de : « Très bien, votre demande d’entretien est bien enregistrée. L’équipe PC Froid va vous rappeler pour convenir avec vous d’un créneau selon vos disponibilités. Bonne journée. » Ne promettez aucun créneau ni délai précis.';
+    return 'Dites exactement et uniquement : "Très bien, votre demande d’entretien est bien enregistrée. L’équipe PC Froid vous rappellera pour convenir d’un créneau avec vous. Bonne journée." Ne posez aucune question et n’ajoutez aucune autre phrase.';
   }
 
   if (serviceIntent === "devis_installation") {
-    return 'Clôturez en une seule fois, sans nouvelle question. Rassurez le client : sa demande de devis ou de projet est bien enregistrée et l’équipe PC Froid va le rappeler pour reprendre le projet avec lui et organiser la suite. Ne promettez aucun délai précis.';
+    return 'Dites exactement et uniquement : "Très bien, votre demande de devis est bien enregistrée. L’équipe PC Froid vous rappellera pour reprendre votre projet avec vous. Bonne journée." Ne posez aucune question et n’ajoutez aucune autre phrase.';
   }
 
   if (equipment) {
-    return `Clôturez en une seule fois, sans nouvelle question. Rassurez le client : sa demande concernant ${equipment} est bien enregistrée et l’équipe PC Froid va la reprendre et le rappeler pour organiser la suite. Ne promettez aucun délai précis.`;
+    return `Dites exactement et uniquement : "Très bien, votre demande concernant ${equipment} est bien enregistrée. L’équipe PC Froid vous rappellera pour organiser la suite. Bonne journée." Ne posez aucune question et n’ajoutez aucune autre phrase.`;
   }
 
-  return 'Clôturez en une seule fois, sans nouvelle question. Indiquez que la demande est bien enregistrée et que l’équipe PC Froid va la reprendre et rappeler le client pour organiser la suite. Ne promettez aucun délai précis.';
+  return 'Dites exactement et uniquement : "Très bien, votre demande est bien enregistrée. L’équipe PC Froid vous rappellera. Bonne journée." Ne posez aucune question et n’ajoutez aucune autre phrase.';
 }
