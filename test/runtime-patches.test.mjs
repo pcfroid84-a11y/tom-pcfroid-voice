@@ -45,7 +45,7 @@ test("les correctifs runtime conservent tous les acquis et sécurisent le client
   assert.match(generated, /Contexte client existant terminé : reprise du parcours/);
   assert.match(generated, /étapes administratives sans phrases parasites/);
   assert.match(generated, /non non c'est bon merci reconnu comme fin/);
-  assert.match(generated, /votre demande d’entretien est bien enregistrée/);
+  assert.match(generated, /buildReassuringClosingInstructions/);
 
   const file = join(tmpdir(), `tom-generated-launcher-${process.pid}-${Date.now()}.mjs`);
   await writeFile(file, generated, "utf8");
