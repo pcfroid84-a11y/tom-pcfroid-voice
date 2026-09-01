@@ -24,6 +24,8 @@ test("les correctifs runtime conservent raccrochage, secteur et protection anti-
   assert.match(generated, /devis clim simple reconnu comme projet installation/);
   assert.match(generated, /protection anti-écho pendant accueil/);
   assert.match(generated, /ignore écho bonjour initial/);
+  assert.match(generated, /Nettoyage climatisation classé comme entretien/);
+  assert.match(generated, /qualification limitée à une réponse courte/);
 
   const file = join(tmpdir(), `tom-generated-launcher-${process.pid}-${Date.now()}.mjs`);
   await writeFile(file, generated, "utf8");
