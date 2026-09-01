@@ -66,3 +66,9 @@ test("le guide interdit la fausse confirmation et la fausse disponibilité", () 
   assert.match(TOM_CONVERSATION_GUIDANCE, /merci pour cette confirmation/i);
   assert.match(TOM_CONVERSATION_GUIDANCE, /aucun agenda réel/i);
 });
+
+test("le guide conserve l'étape si le client pose une question à la place", () => {
+  assert.match(TOM_CONVERSATION_GUIDANCE, /pose une autre question/i);
+  assert.match(TOM_CONVERSATION_GUIDANCE, /sans perdre le fil/i);
+  assert.match(TOM_CONVERSATION_GUIDANCE, /ne comptez pas cette parenthèse comme une incompréhension/i);
+});
