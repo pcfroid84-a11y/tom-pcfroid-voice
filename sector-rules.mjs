@@ -14,6 +14,13 @@ function normalize(value = "") {
     .trim();
 }
 
+function normalizeNumberText(value = "") {
+  return normalize(value)
+    .replace(/[^a-z0-9 ]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 const communeEntries = Array.isArray(sector?.communes) ? sector.communes : [];
 const cityMap = new Map();
 const postalMap = new Map();
@@ -189,7 +196,7 @@ const NUMBER_VOCABULARY = new Set([
 ]);
 
 function numericWordRuns(text) {
-  const tokens = normalize(text).split(" ").filter(Boolean);
+  const tokens = normalizeNumberText(text).split(" ").filter(Boolean);
   const runs = [];
   let current = [];
 
@@ -212,8 +219,6 @@ function postalFromSpokenRun(run) {
     return cleaned.map((token) => DIGIT_WORDS.get(token)).join("");
   }
 
-  // Forme « quatre-vingt-quatre mille deux cent soixante ».
-  // On ne transforme pas un simple « quatre-vingt-quatre » en 00084.
   if (cleaned.includes("mille")) {
     const cardinal = parseFrenchCardinal(cleaned);
     if (cardinal != null && cardinal >= 0 && cardinal <= 99999) {
@@ -221,8 +226,12 @@ function postalFromSpokenRun(run) {
     }
   }
 
-  // Forme la plus naturelle : « quatre-vingt-quatre deux cent soixante ».
-  for (let split = 1; split < cleaned.length; split += 1) {
+  // Un nombre inférieur à 100 prononcé seul est un département, pas un code postal complet.
+  if (parseUnder100(cleaned) != null) return null;
+
+  // Forme courante sans « mille » : « quatre-vingt-quatre deux cent soixante ».
+  // On teste les coupures de la plus longue partie département vers la plus courte.
+  for (let split = cleaned.length - 1; split >= 1; split -= 1) {
     const department = parseUnder100(cleaned.slice(0, split));
     const suffix = parseUnder1000(cleaned.slice(split));
     if (department == null || suffix == null || department < 0 || department > 99 || suffix < 0 || suffix > 999) {
@@ -236,7 +245,7 @@ function postalFromSpokenRun(run) {
 }
 
 function parseSpokenGroup(text, max) {
-  const tokens = normalize(text).split(" ").filter(Boolean);
+  const tokens = normalizeNumberText(text).split(" ").filter(Boolean);
   if (!tokens.length || !tokens.every((token) => NUMBER_VOCABULARY.has(token))) return null;
   const value = max <= 99 ? parseUnder100(tokens) : parseUnder1000(tokens);
   if (value == null || value < 0 || value > max) return null;
@@ -261,9 +270,9 @@ export function extractPostalCode(text = "") {
     }
   }
 
-  const normalizedRaw = normalize(raw);
+  const normalizedRaw = normalizeNumberText(raw);
 
-  // Formes mixtes : « 84 deux cent soixante ».
+  // Forme mixte : « 84 deux cent soixante ».
   const leadingDigits = normalizedRaw.match(/\b(\d{1,2})\b\s+(.+)$/);
   if (leadingDigits) {
     const department = Number(leadingDigits[1]);
