@@ -2,6 +2,7 @@ import { readFile, writeFile } from "node:fs/promises";
 import { RUNTIME_PATCHES } from "./runtime-patches.mjs";
 import { CONVERSATION_START_PATCHES } from "./conversation-start-patches.mjs";
 import { DETOUR_HARDENING_PATCHES } from "./detour-hardening-patches.mjs";
+import { EXISTING_CUSTOMER_FIX_PATCHES } from "./existing-customer-fix-patches.mjs";
 import { ECHO_GUARD_PATCHES } from "./echo-guard-patches.mjs";
 
 const baseLauncherPath = new URL("./start-with-call-end.mjs", import.meta.url);
@@ -18,6 +19,7 @@ launcher = launcher.replace(
   RUNTIME_PATCHES +
     CONVERSATION_START_PATCHES +
     DETOUR_HARDENING_PATCHES +
+    EXISTING_CUSTOMER_FIX_PATCHES +
     ECHO_GUARD_PATCHES +
     anchor,
 );
