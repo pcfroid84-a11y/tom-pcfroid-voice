@@ -61,6 +61,17 @@ test("la conclusion entretien est exacte et sans promesse de créneau", () => {
   assert.match(instruction, /Ne posez aucune question/i);
 });
 
+test("la conclusion devis ne peut pas devenir un entretien", () => {
+  const instruction = buildReassuringClosingInstructions({
+    serviceIntent: "devis_installation",
+    equipment: "climatisation",
+  });
+  assert.match(instruction, /demande de devis est bien enregistrée/i);
+  assert.match(instruction, /reprendre votre projet avec vous/i);
+  assert.doesNotMatch(instruction, /organiser l’entretien/i);
+  assert.doesNotMatch(instruction, /demande d’entretien/i);
+});
+
 test("le guide interdit la fausse confirmation, la fausse disponibilité et protège les parenthèses", () => {
   assert.match(TOM_CONVERSATION_GUIDANCE, /merci pour cette confirmation/i);
   assert.match(TOM_CONVERSATION_GUIDANCE, /aucun agenda réel/i);
