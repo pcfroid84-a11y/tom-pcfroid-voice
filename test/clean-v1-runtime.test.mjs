@@ -72,12 +72,15 @@ test("toutes les ancres du runtime propre correspondent à l'ancien moteur stabl
       "const fixedAdministrativeInstruction = (() => {",
       "Instruction administrative figée",
       "Aucun mot avant, aucun mot après",
-      "fixedAdministrativeInstruction ? { max_output_tokens: 240 }",
       "flowStageAtTurnStart !== \"customer_status\"",
-      "Allô simple : étape conservée sans nouvelle question",
+      "Allô simple ou transcription équivalente : étape conservée sans nouvelle question",
       "Oui, je vous écoute.",
       "Est-ce que l’eau vient de l’unité intérieure ?",
       "Ne demandez pas au client de répéter le motif",
+      "Rendez-vous sans motif : demande de précision avant le statut client",
+      "Bien sûr. C’est pour quel type d’intervention ?",
+      "Relance statut client verrouillée",
+      "Dites-moi simplement oui si vous êtes déjà client chez PC Froid, ou non si c’est votre première demande.",
     ]) {
       assert.ok(runtime.includes(marker), `marqueur runtime absent : ${marker}`);
     }
@@ -86,7 +89,10 @@ test("toutes les ancres du runtime propre correspondent à l'ancien moteur stabl
     assert.match(runtime, /flowLock\?\.stage === "new-identity"[\s\S]{0,300}Pouvez-vous me donner votre prénom et votre nom/);
     assert.match(runtime, /flowLock\?\.stage === "callback"[\s\S]{0,300}On peut vous rappeler sur le numéro avec lequel vous appelez \?/);
     assert.match(runtime, /flowStageAtTurnStart !== "customer_status"/);
-    assert.match(runtime, /\^\(allo\|allo allo\)\$/);
+    assert.match(runtime, /\^\(allo\|hallo\|hello\|hola\)\$/);
+    assert.match(runtime, /rendez\[- \]\?vous\|rdv/);
+    assert.doesNotMatch(runtime, /max_output_tokens:\s*240/);
+    assert.doesNotMatch(runtime, /max_output_tokens:\s*80/);
     assert.doesNotMatch(runtime, /ignoreNextGreetingSpeechTranscript/);
 
     const syntax = spawnSync(process.execPath, ["--check", runtimeUrl.pathname], {
