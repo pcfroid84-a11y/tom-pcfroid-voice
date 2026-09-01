@@ -9,11 +9,16 @@ export function normalizeCleanText(value = "") {
     .trim();
 }
 
+function cleanFusedYesNoHesitation(value = "") {
+  return String(value || "").replace(/^e(?=(?:non|oui)\b)/, "");
+}
+
 export function extractYesNoClean(text = "") {
   let value = normalizeCleanText(text);
   if (!value) return null;
 
   value = value.replace(/^(?:(?:euh|ah|ben|bah)\s+)+/, "");
+  value = cleanFusedYesNoHesitation(value);
 
   const hasYes = /\boui\b/.test(value);
   const hasNo = /\bnon\b/.test(value);
@@ -83,6 +88,7 @@ export function extractCustomerStatusClean(text = "") {
   if (!value) return null;
 
   value = value.replace(/^(euh|ah)\s+/, "");
+  value = cleanFusedYesNoHesitation(value);
 
   if (relationshipProvesExistingCustomer(value)) return "existing";
 
@@ -129,6 +135,8 @@ export function looksLikeLateralQuestion(text = "") {
 const IDENTITY_FILLERS = new Set([
   "oui", "non", "bonjour", "bon", "merci", "allo", "ca", "c'est ca", "c est ca",
   "c'est moi", "c est moi", "moi", "d'accord", "d accord", "bien sur",
+  "premiere demande", "ma premiere demande", "c'est ma premiere demande", "c est ma premiere demande",
+  "premiere fois", "ma premiere fois", "c'est ma premiere fois", "c est ma premiere fois",
 ]);
 
 export function extractIdentityClean(text = "") {
@@ -149,6 +157,7 @@ export function extractIdentityClean(text = "") {
   const normalized = normalizeCleanText(candidate);
   if (IDENTITY_FILLERS.has(normalized)) return null;
   if (/\b(clim|climatisation|entretien|maintenance|depannage|panne|adresse|rue|avenue|bonjour|merci)\b/.test(normalized)) return null;
+  if (/\b(premiere demande|premiere fois|nouveau client|pas encore client|jamais appele|jamais fait appel)\b/.test(normalized)) return null;
 
   return candidate;
 }
