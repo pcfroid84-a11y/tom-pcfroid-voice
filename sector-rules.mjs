@@ -212,14 +212,16 @@ function postalFromSpokenRun(run) {
     return cleaned.map((token) => DIGIT_WORDS.get(token)).join("");
   }
 
-  const cardinal = parseFrenchCardinal(cleaned);
-  if (cardinal != null && cardinal >= 0 && cardinal <= 99999) {
-    const postal = String(cardinal).padStart(5, "0");
-    if (postal.length === 5) return postal;
+  // Forme « quatre-vingt-quatre mille deux cent soixante ».
+  // On ne transforme pas un simple « quatre-vingt-quatre » en 00084.
+  if (cleaned.includes("mille")) {
+    const cardinal = parseFrenchCardinal(cleaned);
+    if (cardinal != null && cardinal >= 0 && cardinal <= 99999) {
+      return String(cardinal).padStart(5, "0");
+    }
   }
 
-  // Les codes postaux sont souvent dictés en deux groupes : « quatre-vingt-quatre, deux cent soixante ».
-  // Même sans pause clairement transcrite, on essaie toutes les coupures 2 chiffres + 3 chiffres.
+  // Forme la plus naturelle : « quatre-vingt-quatre deux cent soixante ».
   for (let split = 1; split < cleaned.length; split += 1) {
     const department = parseUnder100(cleaned.slice(0, split));
     const suffix = parseUnder1000(cleaned.slice(split));
@@ -227,18 +229,59 @@ function postalFromSpokenRun(run) {
       continue;
     }
 
-    const postal = `${String(department).padStart(2, "0")}${String(suffix).padStart(3, "0")}`;
-    if (postal.length === 5) return postal;
+    return `${String(department).padStart(2, "0")}${String(suffix).padStart(3, "0")}`;
   }
 
   return null;
 }
 
+function parseSpokenGroup(text, max) {
+  const tokens = normalize(text).split(" ").filter(Boolean);
+  if (!tokens.length || !tokens.every((token) => NUMBER_VOCABULARY.has(token))) return null;
+  const value = max <= 99 ? parseUnder100(tokens) : parseUnder1000(tokens);
+  if (value == null || value < 0 || value > max) return null;
+  return value;
+}
+
 export function extractPostalCode(text = "") {
   const raw = String(text || "");
+
+  // 84260 ou 84 260.
   const compact = raw.replace(/(?<=\d)\s+(?=\d)/g, "");
   const direct = compact.match(/\b\d{5}\b/);
   if (direct?.[0]) return direct[0];
+
+  // 84, 260 / 84-260 / 84.260.
+  const numericGroups = raw.match(/\b(\d{1,2})\D+(\d{1,3})\b/);
+  if (numericGroups) {
+    const department = Number(numericGroups[1]);
+    const suffix = Number(numericGroups[2]);
+    if (department >= 0 && department <= 99 && suffix >= 0 && suffix <= 999) {
+      return `${String(department).padStart(2, "0")}${String(suffix).padStart(3, "0")}`;
+    }
+  }
+
+  const normalizedRaw = normalize(raw);
+
+  // Formes mixtes : « 84 deux cent soixante ».
+  const leadingDigits = normalizedRaw.match(/\b(\d{1,2})\b\s+(.+)$/);
+  if (leadingDigits) {
+    const department = Number(leadingDigits[1]);
+    const suffix = parseSpokenGroup(leadingDigits[2], 999);
+    if (department >= 0 && department <= 99 && suffix != null) {
+      return `${String(department).padStart(2, "0")}${String(suffix).padStart(3, "0")}`;
+    }
+  }
+
+  // Forme mixte inverse : « quatre-vingt-quatre 260 ».
+  const trailingDigits = normalizedRaw.match(/^(.+?)\s+\b(\d{1,3})\b$/);
+  if (trailingDigits) {
+    const department = parseSpokenGroup(trailingDigits[1], 99);
+    const suffix = Number(trailingDigits[2]);
+    if (department != null && suffix >= 0 && suffix <= 999) {
+      return `${String(department).padStart(2, "0")}${String(suffix).padStart(3, "0")}`;
+    }
+  }
 
   for (const run of numericWordRuns(raw)) {
     const postal = postalFromSpokenRun(run);
