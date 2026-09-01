@@ -1,5 +1,5 @@
 import { readFile, writeFile } from "node:fs/promises";
-import { CLEAN_V1_FINAL_PATCHES } from "./clean-v1-runtime-final.mjs";
+import { CLEAN_V1_LATEST_PATCHES } from "./clean-v1-runtime-latest.mjs";
 
 const baseLauncherPath = new URL("./start-with-call-end.mjs", import.meta.url);
 const runtimeLauncherPath = new URL("./.tom-clean-v1-launcher.mjs", import.meta.url);
@@ -10,6 +10,6 @@ if (!launcher.includes(anchor)) {
   throw new Error("Tom V1 propre : ancre launcher introuvable");
 }
 
-launcher = launcher.replace(anchor, CLEAN_V1_FINAL_PATCHES + anchor);
+launcher = launcher.replace(anchor, CLEAN_V1_LATEST_PATCHES + anchor);
 await writeFile(runtimeLauncherPath, launcher, "utf8");
 await import(runtimeLauncherPath.href + `?v=${Date.now()}`);
