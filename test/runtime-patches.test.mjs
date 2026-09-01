@@ -7,6 +7,7 @@ import { spawnSync } from "node:child_process";
 
 import { RUNTIME_PATCHES } from "../runtime-patches.mjs";
 import { CONVERSATION_START_PATCHES } from "../conversation-start-patches.mjs";
+import { DETOUR_HARDENING_PATCHES } from "../detour-hardening-patches.mjs";
 import { ECHO_GUARD_PATCHES } from "../echo-guard-patches.mjs";
 
 test("les correctifs runtime conservent raccrochage, secteur et protection anti-écho", async () => {
@@ -16,7 +17,11 @@ test("les correctifs runtime conservent raccrochage, secteur et protection anti-
 
   const generated = launcher.replace(
     anchor,
-    RUNTIME_PATCHES + CONVERSATION_START_PATCHES + ECHO_GUARD_PATCHES + anchor,
+    RUNTIME_PATCHES +
+      CONVERSATION_START_PATCHES +
+      DETOUR_HARDENING_PATCHES +
+      ECHO_GUARD_PATCHES +
+      anchor,
   );
   assert.match(generated, /raccrochage fiable après final_followup/);
   assert.match(generated, /ville inconnue vers demande code postal/);
@@ -28,6 +33,9 @@ test("les correctifs runtime conservent raccrochage, secteur et protection anti-
   assert.match(generated, /qualification limitée à une réponse courte/);
   assert.match(generated, /Question latérale : Tom répond puis reprend l'étape sans la perdre/);
   assert.match(generated, /ne considérez pas sa question comme la réponse attendue/);
+  assert.match(generated, /Parenthèse annoncée : Tom garde l'étape et laisse poser la question/);
+  assert.match(generated, /première demande \/ première fois reconnues comme nouveau client/);
+  assert.match(generated, /extractCustomerStatusAnswer\(callerMessage\) \|\| naturalCustomerStatusHint/);
 
   const file = join(tmpdir(), `tom-generated-launcher-${process.pid}-${Date.now()}.mjs`);
   await writeFile(file, generated, "utf8");
