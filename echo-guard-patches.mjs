@@ -46,14 +46,6 @@ patches.push(
 
 patches.push(
   patch(
-    `        if (\n  state.lastConversationResponseAt === 0 &&\n  normalizeText(callerMessage) === "bonjour"\n) {`,
-    `        if (\n  state.lastConversationResponseAt === 0 &&\n  normalizeText(callerMessage) === "bonjour"\n) {`,
-    "conserve ignore écho bonjour initial",
-  ),
-);
-
-patches.push(
-  patch(
     `  const normalizedCandidate = normalizeText(candidate);\n  if (FILLER_MESSAGES.has(normalizedCandidate)) return null;`,
     `  const normalizedCandidate = normalizeText(candidate);\n  if (["ca", "ça", "c est ca", "c'est ça", "c est ça", "c'est ca"].includes(normalizedCandidate)) return null;\n  if (FILLER_MESSAGES.has(normalizedCandidate)) return null;`,
     "ça ne peut jamais devenir une identité",
