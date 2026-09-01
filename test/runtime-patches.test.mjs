@@ -26,6 +26,8 @@ test("les correctifs runtime conservent raccrochage, secteur et protection anti-
   assert.match(generated, /ignore écho bonjour initial/);
   assert.match(generated, /Nettoyage climatisation classé comme entretien/);
   assert.match(generated, /qualification limitée à une réponse courte/);
+  assert.match(generated, /Question latérale : Tom répond puis reprend l'étape sans la perdre/);
+  assert.match(generated, /ne considérez pas sa question comme la réponse attendue/);
 
   const file = join(tmpdir(), `tom-generated-launcher-${process.pid}-${Date.now()}.mjs`);
   await writeFile(file, generated, "utf8");
