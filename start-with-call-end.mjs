@@ -17,6 +17,7 @@ replaceOnce(
   "https://pcfroid84.app.n8n.cloud/webhook/tom-appel";
 `,
 `import { buildCallEndPayload } from "./call-end-payload.mjs";
+import { amplifyMulawBase64 } from "./audio-utils.mjs";
 import { loadKnowledgeContext } from "./knowledge-loader.mjs";
 import {
   TOM_CONVERSATION_GUIDANCE,
@@ -34,7 +35,7 @@ const N8N_CALL_END_WEBHOOK_URL =
   process.env.N8N_CALL_END_WEBHOOK_URL ||
   "https://pcfroid84.app.n8n.cloud/webhook/tom-fin-appel";
 `,
-"URL webhook fin d'appel + payload V1 + connaissances + conversation"
+"URL webhook fin d'appel + payload V1 + connaissances + conversation + audio"
 );
 
 replaceOnce(
@@ -92,7 +93,7 @@ replaceOnce(
               earlyCityCapturedWhileIdentity = true;
 
               addSystemContext(
-                \`VILLE D'INTERVENTION DÉJÀ COMPRISE : \${earlyCity}. Ne la redemandez pas. L'identité prénom et nom reste à demander maintenant.\`
+                `VILLE D'INTERVENTION DÉJÀ COMPRISE : ${earlyCity}. Ne la redemandez pas. L'identité prénom et nom reste à demander maintenant.`
               );
 
               app.log.info(
@@ -111,6 +112,89 @@ replaceOnce(
 `        instructions: SYSTEM_PROMPT,`,
 `        instructions: SYSTEM_PROMPT + PCFROID_KNOWLEDGE_CONTEXT + TOM_CONVERSATION_GUIDANCE,`,
 "injection base de connaissances et ton conversationnel PC Froid"
+);
+
+replaceOnce(
+`          output: {
+            format: { type: "audio/pcmu" },
+            voice: "verse",
+            speed: 1.10,
+          },`,
+`          output: {
+            format: { type: "audio/pcmu" },
+            voice: "verse",
+            speed: 1.15,
+          },`,
+"voix légèrement plus rapide"
+);
+
+replaceOnce(
+`        voice: "verse",
+        speed: 1.10,
+        maxOutputTokens: MAX_OUTPUT_TOKENS,`,
+`        voice: "verse",
+        speed: 1.15,
+        maxOutputTokens: MAX_OUTPUT_TOKENS,`,
+"journal vitesse voix"
+);
+
+replaceOnce(
+`     if (
+  event.type === "input_audio_buffer.speech_started" ||
+  event.type === "input_audio_buffer.speech_stopped"
+) {
+  app.log.info(
+    { eventType: event.type },
+    "Détection parole client OpenAI"
+  );
+}`,
+`     if (event.type === "input_audio_buffer.speech_started") {
+  app.log.info(
+    { eventType: event.type, phase: state.phase },
+    "Détection début parole client OpenAI"
+  );
+
+  const canInterrupt =
+    !state.closed &&
+    !state.closingStarted &&
+    !state.pendingHangup &&
+    !state.hangupMark;
+
+  if (canInterrupt && !state.conversationModeEnabled &&
+      (state.phase === "greeting-generating" || state.phase === "greeting-playback")) {
+    if (state.greetingPlaybackFallback) {
+      clearTimeout(state.greetingPlaybackFallback);
+      state.greetingPlaybackFallback = null;
+    }
+    state.greetingPlaybackMark = null;
+    state.pendingConversationResponse = false;
+    cancelActiveResponse();
+    enableConversationMode("caller-barge-in-greeting");
+    app.log.info("Le client a parlé pendant l'accueil : Tom se tait et écoute");
+  } else if (
+    canInterrupt &&
+    state.conversationModeEnabled &&
+    (state.responseActive || state.assistantSpeaking || state.playbackMark)
+  ) {
+    state.pendingConversationResponse = false;
+    cancelActiveResponse();
+    app.log.info("Interruption client : audio de Tom coupé immédiatement");
+  }
+}
+
+if (event.type === "input_audio_buffer.speech_stopped") {
+  app.log.info(
+    { eventType: event.type, phase: state.phase },
+    "Détection fin parole client OpenAI"
+  );
+}`,
+"barge-in client : Tom se tait dès que le client parle"
+);
+
+replaceOnce(
+`            media: { payload: event.delta },`,
+`            media: { payload: amplifyMulawBase64(event.delta, 1.12) },`,
+"léger gain de volume voix"
 );
 
 replaceOnce(
