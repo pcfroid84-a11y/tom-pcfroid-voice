@@ -80,6 +80,34 @@ test("extraction code postal tolère un espace", () => {
   assert.equal(extractPostalCode("C'est 84 170"), "84170");
 });
 
+test("comprend un code postal dicté chiffre par chiffre", () => {
+  assert.equal(extractPostalCode("huit quatre deux six zéro"), "84260");
+  assert.equal(extractPostalCode("huit, quatre, deux, six, zéro"), "84260");
+});
+
+test("comprend un code postal dicté comme un nombre français", () => {
+  assert.equal(
+    extractPostalCode("quatre-vingt-quatre mille deux cent soixante"),
+    "84260",
+  );
+});
+
+test("comprend un code postal dicté en deux groupes", () => {
+  assert.equal(
+    extractPostalCode("C'est quatre-vingt-quatre, deux cent soixante."),
+    "84260",
+  );
+  assert.equal(
+    extractPostalCode("quatre-vingt-quatre deux cent soixante"),
+    "84260",
+  );
+});
+
+test("conserve le zéro initial d'un code postal dicté", () => {
+  assert.equal(extractPostalCode("zéro six zéro zéro zéro"), "06000");
+  assert.equal(extractPostalCode("six mille"), "06000");
+});
+
 test("conversion statut vers zone", () => {
   assert.equal(sectorStatusToZone("yes"), "in");
   assert.equal(sectorStatusToZone("no"), "out");
