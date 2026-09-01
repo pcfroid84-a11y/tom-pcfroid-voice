@@ -7,10 +7,18 @@ import {
   buildReassuringClosingInstructions,
 } from "../conversation-guidance.mjs";
 
-test("Tom répond à allô au lieu de rester silencieux", () => {
+test("Tom répond à allô sans enchaîner avec une question parasite", () => {
   const instruction = buildInitialRecoveryInstruction("Allô ?");
   assert.match(instruction, /je vous écoute/i);
-  assert.match(instruction, /Que puis-je faire pour vous/i);
+  assert.doesNotMatch(instruction, /Que puis-je faire pour vous/i);
+  assert.match(instruction, /laissez l’appelant expliquer sa demande/i);
+});
+
+test("Tom répond à bonjour puis laisse réellement parler l'appelant", () => {
+  const instruction = buildInitialRecoveryInstruction("Bonjour.");
+  assert.match(instruction, /Bonjour, je vous écoute/i);
+  assert.match(instruction, /Ne posez aucune question/i);
+  assert.doesNotMatch(instruction, /motif de votre appel/i);
 });
 
 test("une transcription initiale inexploitable déclenche une reformulation naturelle", () => {
