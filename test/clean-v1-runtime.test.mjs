@@ -5,21 +5,36 @@ import { spawnSync } from "node:child_process";
 
 import { CLEAN_V1_PATCHES } from "../clean-v1-runtime-patches.mjs";
 
-test("le runtime propre s'injecte entièrement dans l'ancien moteur stable", async () => {
+test("toutes les ancres du runtime propre correspondent à l'ancien moteur stable", async () => {
   const baseLauncher = await readFile(new URL("../start-with-call-end.mjs", import.meta.url), "utf8");
   const anchor = 'await writeFile(runtimePath, source, "utf8");';
   assert.ok(baseLauncher.includes(anchor), "ancre finale du launcher absente");
 
   let generatedLauncher = baseLauncher.replace(anchor, CLEAN_V1_PATCHES + anchor);
 
-  // Pour ce test, on applique tous les replaceOnce et on écrit le runtime,
-  // mais on n'importe pas le serveur HTTP final.
+  const strictReplaceOnce = `function replaceOnce(search, replacement, label) {
+  if (!source.includes(search)) {
+    throw new Error(\`Patch fin d'appel impossible : ancre introuvable (\${label})\`);
+  }
+  source = source.replace(search, replacement);
+}`;
+
+  const auditReplaceOnce = `function replaceOnce(search, replacement, label) {
+  if (!source.includes(search)) {
+    console.error("CLEAN_MISSING_ANCHOR:" + label);
+    return;
+  }
+  source = source.replace(search, replacement);
+}`;
+
+  assert.ok(generatedLauncher.includes(strictReplaceOnce), "fonction replaceOnce historique introuvable");
+  generatedLauncher = generatedLauncher.replace(strictReplaceOnce, auditReplaceOnce);
   generatedLauncher = generatedLauncher.replace(
     'await import(runtimePath.href + `?v=${Date.now()}`);',
     'console.log(runtimePath.pathname);',
   );
 
-  const launcherUrl = new URL(`../.clean-v1-runtime-test-${process.pid}.mjs`, import.meta.url);
+  const launcherUrl = new URL(`../.clean-v1-runtime-audit-${process.pid}.mjs`, import.meta.url);
   const runtimeUrl = new URL("../.tom-server-runtime.mjs", import.meta.url);
 
   await writeFile(launcherUrl, generatedLauncher, "utf8");
@@ -31,14 +46,16 @@ test("le runtime propre s'injecte entièrement dans l'ancien moteur stable", asy
       timeout: 10000,
     });
 
-    assert.equal(
-      applied.status,
-      0,
-      `échec d'injection du runtime propre:\n${applied.stderr || applied.stdout}`,
-    );
+    assert.equal(applied.status, 0, applied.stderr || applied.stdout);
+
+    const missing = String(applied.stderr || "")
+      .split(/\r?\n/)
+      .filter((line) => line.startsWith("CLEAN_MISSING_ANCHOR:"))
+      .map((line) => line.slice("CLEAN_MISSING_ANCHOR:".length));
+
+    assert.deepEqual(missing, [], `ancres manquantes du contrôleur propre : ${missing.join(", ")}`);
 
     const runtime = await readFile(runtimeUrl, "utf8");
-
     for (const marker of [
       "Client test reconnu directement par le numéro appelant",
       "Relation client déjà prouvée : question statut évitée",
@@ -48,10 +65,9 @@ test("le runtime propre s'injecte entièrement dans l'ancien moteur stable", asy
       "Code postal utilisé pour sécuriser le secteur",
       "Très bien, votre demande d’entretien est bien enregistrée.",
     ]) {
-      assert.match(runtime, new RegExp(marker.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+      assert.ok(runtime.includes(marker), `marqueur runtime absent : ${marker}`);
     }
 
-    // Le bug qui jetait la première vraie phrase après l'accueil ne doit pas exister.
     assert.doesNotMatch(runtime, /ignoreNextGreetingSpeechTranscript/);
 
     const syntax = spawnSync(process.execPath, ["--check", runtimeUrl.pathname], {
