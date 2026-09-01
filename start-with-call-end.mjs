@@ -93,7 +93,7 @@ replaceOnce(
               earlyCityCapturedWhileIdentity = true;
 
               addSystemContext(
-                `VILLE D'INTERVENTION DÉJÀ COMPRISE : ${earlyCity}. Ne la redemandez pas. L'identité prénom et nom reste à demander maintenant.`
+                \`VILLE D'INTERVENTION DÉJÀ COMPRISE : \${earlyCity}. Ne la redemandez pas. L'identité prénom et nom reste à demander maintenant.\`
               );
 
               app.log.info(
