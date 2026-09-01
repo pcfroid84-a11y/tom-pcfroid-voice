@@ -6,7 +6,9 @@ import {
   detectServiceIntent,
   extractCustomerStatusClean,
   extractIdentityClean,
+  extractYesNoClean,
   finalAnswerKind,
+  isPlausibleFrenchLocationText,
   nextAdministrativeStage,
   relationshipProvesExistingCustomer,
   shouldAskIdentityAgain,
@@ -24,6 +26,16 @@ test("les formulations naturelles du statut client sont comprises", () => {
   for (const text of ["Non", "Non non", "Première demande", "Première fois", "Je ne suis pas client", "Jamais appelé"]) {
     assert.equal(extractCustomerStatusClean(text), "new", text);
   }
+});
+
+test("les oui et non naturels sont compris pour le rappel", () => {
+  for (const text of ["Oui", "Oui oui", "Oui, bien sûr.", "Bien sûr, oui.", "D'accord, oui.", "Euh oui, bien sûr."]) {
+    assert.equal(extractYesNoClean(text), "yes", text);
+  }
+  for (const text of ["Non", "Non merci", "Euh non, merci."]) {
+    assert.equal(extractYesNoClean(text), "no", text);
+  }
+  assert.equal(extractYesNoClean("Oui mais non"), null);
 });
 
 test("une phrase qui prouve la relation client évite la question statut", () => {
@@ -53,6 +65,12 @@ test("les identités parasites sont refusées", () => {
   assert.equal(extractIdentityClean("Carole Pérez"), "Carole Pérez");
 });
 
+test("une ville en alphabet parasite n'est jamais conservée", () => {
+  assert.equal(isPlausibleFrenchLocationText("好荒離"), false);
+  assert.equal(isPlausibleFrenchLocationText("Monteux"), true);
+  assert.equal(isPlausibleFrenchLocationText("Saint-Rémy-de-Provence"), true);
+});
+
 test("un client existant rappelable n'est plus harcelé pour son nom", () => {
   assert.equal(shouldAskIdentityAgain({ customerStatus: "existing", identityKnown: false, callbackConfirmed: true, identityFallbackByPhone: true }), false);
   assert.equal(nextAdministrativeStage({ customerStatus: "existing", identityKnown: false, identityFallbackByPhone: true, knownCustomerAddress: null, callbackConfirmed: false }), "callback");
@@ -60,5 +78,6 @@ test("un client existant rappelable n'est plus harcelé pour son nom", () => {
 
 test("la fin naturelle est stable", () => {
   assert.equal(finalAnswerKind("Non, c'est bon."), "nothing_else");
+  assert.equal(finalAnswerKind("Euh non, merci."), "nothing_else");
   assert.equal(finalAnswerKind("Non, c'est bon, juste qu'on me rappelle rapidement."), "followup_then_close");
 });
