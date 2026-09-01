@@ -63,7 +63,7 @@ test("toutes les ancres du runtime propre correspondent à l'ancien moteur stabl
       "Nom client existant non compris : aucune deuxième interrogation",
       "Transcription d'un tour commencé pendant l'accueil ignorée sans contaminer le tour suivant",
       "Code postal utilisé pour sécuriser le secteur",
-      "Très bien, votre demande d’entretien est bien enregistrée.",
+      "instructions: buildReassuringClosingInstructions({",
     ]) {
       assert.ok(runtime.includes(marker), `marqueur runtime absent : ${marker}`);
     }
