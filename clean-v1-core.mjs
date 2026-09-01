@@ -9,6 +9,40 @@ export function normalizeCleanText(value = "") {
     .trim();
 }
 
+export function extractYesNoClean(text = "") {
+  let value = normalizeCleanText(text);
+  if (!value) return null;
+
+  value = value.replace(/^(?:(?:euh|ah|ben|bah)\s+)+/, "");
+
+  const hasYes = /\boui\b/.test(value);
+  const hasNo = /\bnon\b/.test(value);
+  if (hasYes && hasNo) return null;
+
+  if (
+    hasYes &&
+    /^(?:(?:bien sur|d'accord|d accord|tout a fait|certainement)\s+)*oui(?:\s+(?:oui|bien sur|d'accord|d accord|tout a fait|certainement|merci|pourquoi))*$/.test(value)
+  ) {
+    return "yes";
+  }
+
+  if (
+    hasNo &&
+    /^(?:(?:bien sur|d'accord|d accord)\s+)*non(?:\s+(?:non|merci|c'est bon|c est bon))*$/.test(value)
+  ) {
+    return "no";
+  }
+
+  return null;
+}
+
+export function isPlausibleFrenchLocationText(text = "") {
+  const value = String(text || "").trim();
+  if (!value || value.length > 80) return false;
+  if (!/^[A-Za-zÀ-ÖØ-öø-ÿŒœÆæ.'’ -]+$/u.test(value)) return false;
+  return /[A-Za-zÀ-ÖØ-öø-ÿŒœÆæ]{2}/u.test(value);
+}
+
 export function detectServiceIntent(text = "", equipment = null) {
   const value = normalizeCleanText(text);
   if (!value) return null;
@@ -138,8 +172,10 @@ export function classifyExpectedFieldTurn(stage, text = "") {
 }
 
 export function finalAnswerKind(text = "") {
-  const value = normalizeCleanText(text);
+  let value = normalizeCleanText(text);
   if (!value) return "unknown";
+
+  value = value.replace(/^(?:(?:euh|ah|ben|bah)\s+)+/, "");
 
   if (
     /^(non|non merci|non c'est bon|non c est bon|c'est bon|c est bon|ca ira|rien d'autre|rien d autre|c'est tout|c est tout)$/.test(value)
