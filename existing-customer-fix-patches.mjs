@@ -68,12 +68,4 @@ patches.push(
   ),
 );
 
-patches.push(
-  patch(
-    `'Si l’appelant vient de poser une dernière question, répondez-y brièvement et clairement. Ensuite clôturez une seule fois en indiquant que la demande va être transmise à l’équipe, puis souhaitez une bonne journée. Ne posez plus aucune question.'`,
-    `state.serviceIntent === "entretien"\n        ? 'Dites exactement et uniquement : "Très bien, votre demande d’entretien est bien enregistrée. L’équipe PC Froid vous rappellera pour convenir d’un créneau avec vous. Bonne journée." Ne posez aucune question.'\n        : 'Dites exactement et uniquement : "Très bien, votre demande est bien enregistrée. L’équipe PC Froid vous rappellera. Bonne journée." Ne posez aucune question.'`,
-    "clôture entretien naturelle et déterministe",
-  ),
-);
-
 export const EXISTING_CUSTOMER_FIX_PATCHES = patches.join("\n\n") + "\n\n";
