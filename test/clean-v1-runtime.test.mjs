@@ -90,6 +90,8 @@ test("toutes les ancres du runtime propre correspondent à l'ancien moteur stabl
       "Client reparle pendant les 3 secondes : raccrochage suspendu",
       "Fin de parole client pendant la grâce : nouveau délai de 3 secondes",
       "attente de 3 secondes de silence avant raccrochage",
+      "Formule de départ détectée pendant la ville : pas de raccrochage, ville redemandée",
+      "Je n’ai pas bien compris la ville. Vous pouvez me la répéter, s’il vous plaît ?",
     ]) {
       assert.ok(runtime.includes(marker), `marqueur runtime absent : ${marker}`);
     }
@@ -100,6 +102,8 @@ test("toutes les ancres du runtime propre correspondent à l'ancien moteur stabl
     assert.match(runtime, /flowStageAtTurnStart !== "customer_status"/);
     assert.match(runtime, /\^\(allo\|hallo\|hello\|hola\)\$/);
     assert.match(runtime, /rendez\[- \]\?vous\|rdv/);
+    assert.match(runtime, /flowStageAtTurnStart === "city" && callerIsClosing\(callerMessage\)[\s\S]{0,700}Je n’ai pas bien compris la ville/);
+    assert.match(runtime, /flowStageAtTurnStart === "city" && callerIsClosing\(callerMessage\)[\s\S]{0,1000}return;[\s\S]{0,200}if \(callerIsClosing\(callerMessage\)/);
     assert.doesNotMatch(runtime, /max_output_tokens:\s*240/);
     assert.doesNotMatch(runtime, /max_output_tokens:\s*80/);
     assert.doesNotMatch(runtime, /ignoreNextGreetingSpeechTranscript/);
