@@ -32,6 +32,14 @@ patches.push(
 
 patches.push(
   patch(
+    `         if (callerIsClosing(callerMessage) && flowStageAtTurnStart !== "final_question") {`,
+    `         if (flowStageAtTurnStart === "city" && callerIsClosing(callerMessage)) {\n  state.recoveryPrompt = null;\n  state.pendingCityCandidate = null;\n  app.log.info({ callerMessage }, "Formule de départ détectée pendant la ville : pas de raccrochage, ville redemandée");\n  sendToOpenAI({\n    type: "response.create",\n    response: {\n      output_modalities: ["audio"],\n      instructions: 'Dites exactement et uniquement : "Je n’ai pas bien compris la ville. Vous pouvez me la répéter, s’il vous plaît ?" Aucun mot avant, aucun mot après. Restez à l’étape ville et ne raccrochez pas.',\n    },\n  });\n  return;\n}\n\n         if (callerIsClosing(callerMessage) && flowStageAtTurnStart !== "final_question") {`,
+    "une formule de départ mal transcrite ne ferme jamais l'appel pendant la ville",
+  ),
+);
+
+patches.push(
+  patch(
     `          instructions:\n            \`Dites exactement et uniquement : "D'accord, \${safeCity}. Pour un nouveau client, nous intervenons principalement dans le Vaucluse et les communes limitrophes de notre secteur. \${safeCity} est malheureusement trop éloigné pour que nous prenions en charge cette intervention. Merci de nous avoir appelés. Au revoir, bonne journée." Ne posez aucune autre question.\`,`,
     `          instructions:\n            \`Output ONLY this exact French sentence with no introduction, no commentary and no extra words. Your first spoken words MUST be "D'accord". Exact sentence: "D'accord, \${safeCity}. Pour un nouveau client, nous intervenons principalement dans le Vaucluse et les communes limitrophes de notre secteur. \${safeCity} est malheureusement trop éloigné pour que nous prenions en charge cette intervention. Merci de nous avoir appelés. Au revoir, bonne journée." Stop immediately after "bonne journée".\`,`,
     "clôture hors secteur sans phrase parasite",
