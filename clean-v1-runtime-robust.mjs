@@ -40,8 +40,8 @@ patches.push(
 
 patches.push(
   patch(
-    `        instructions: SYSTEM_PROMPT,\n        audio: {`,
-    `        instructions: SYSTEM_PROMPT,\n        include: ["item.input_audio_transcription.logprobs"],\n        audio: {`,
+    `        instructions: SYSTEM_PROMPT + PCFROID_KNOWLEDGE_CONTEXT + TOM_CONVERSATION_GUIDANCE,\n        audio: {`,
+    `        instructions: SYSTEM_PROMPT + PCFROID_KNOWLEDGE_CONTEXT + TOM_CONVERSATION_GUIDANCE,\n        include: ["item.input_audio_transcription.logprobs"],\n        audio: {`,
     "logprobs de transcription activés",
   ),
 );
