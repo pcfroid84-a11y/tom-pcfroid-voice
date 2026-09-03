@@ -3,14 +3,14 @@ import assert from "node:assert/strict";
 import { readFile, writeFile, unlink } from "node:fs/promises";
 import { spawnSync } from "node:child_process";
 
-import { CLEAN_V1_LATEST_PATCHES } from "../clean-v1-runtime-latest.mjs";
+import { CLEAN_V1_ROBUST_PATCHES } from "../clean-v1-runtime-robust.mjs";
 
 test("toutes les ancres du runtime propre correspondent à l'ancien moteur stable", async () => {
   const baseLauncher = await readFile(new URL("../start-with-call-end.mjs", import.meta.url), "utf8");
   const anchor = 'await writeFile(runtimePath, source, "utf8");';
   assert.ok(baseLauncher.includes(anchor), "ancre finale du launcher absente");
 
-  let generatedLauncher = baseLauncher.replace(anchor, CLEAN_V1_LATEST_PATCHES + anchor);
+  let generatedLauncher = baseLauncher.replace(anchor, CLEAN_V1_ROBUST_PATCHES + anchor);
 
   const strictReplaceOnce = `function replaceOnce(search, replacement, label) {
   if (!source.includes(search)) {
@@ -92,6 +92,17 @@ test("toutes les ancres du runtime propre correspondent à l'ancien moteur stabl
       "attente de 3 secondes de silence avant raccrochage",
       "Formule de départ détectée pendant la ville : pas de raccrochage, ville redemandée",
       "Je n’ai pas bien compris la ville. Vous pouvez me la répéter, s’il vous plaît ?",
+      "./transcription-guard.mjs",
+      "gpt-realtime-2.1",
+      "gpt-4o-transcribe",
+      "item.input_audio_transcription.logprobs",
+      "Conversation téléphonique en français de France",
+      "transcriptionAverageLogprob(event.logprobs)",
+      "Transcription identité incertaine : nom non enregistré",
+      "Trois échecs de transcription identité : poursuite sans inventer de nom",
+      "Ville connue reconnue par garde phonétique",
+      "Transcription ville incertaine : aucune ville enregistrée",
+      "Je capte mal le nom de la ville. Donnez-moi simplement le code postal",
     ]) {
       assert.ok(runtime.includes(marker), `marqueur runtime absent : ${marker}`);
     }
@@ -103,7 +114,11 @@ test("toutes les ancres du runtime propre correspondent à l'ancien moteur stabl
     assert.match(runtime, /\^\(allo\|hallo\|hello\|hola\)\$/);
     assert.match(runtime, /rendez\[- \]\?vous\|rdv/);
     assert.match(runtime, /flowStageAtTurnStart === "city" && callerIsClosing\(callerMessage\)[\s\S]{0,700}Je n’ai pas bien compris la ville/);
-    assert.match(runtime, /flowStageAtTurnStart === "city" && callerIsClosing\(callerMessage\)[\s\S]{0,1000}return;[\s\S]{0,200}if \(callerIsClosing\(callerMessage\)/);
+    assert.match(runtime, /flowStageAtTurnStart === "identity"[\s\S]{0,1200}isReliableIdentityTranscript/);
+    assert.match(runtime, /flowStageAtTurnStart === "city" && !state\.awaitingPostalCode[\s\S]{0,1200}matchKnownSectorCity/);
+    assert.match(runtime, /OPENAI_VAD_PREFIX_MS \|\| 500/);
+    assert.doesNotMatch(runtime, /process\.env\.OPENAI_TRANSCRIBE_MODEL \|\| "gpt-4o-mini-transcribe"/);
+    assert.doesNotMatch(runtime, /process\.env\.OPENAI_REALTIME_MODEL \|\| "gpt-realtime-2\.1-mini"/);
     assert.doesNotMatch(runtime, /max_output_tokens:\s*240/);
     assert.doesNotMatch(runtime, /max_output_tokens:\s*80/);
     assert.doesNotMatch(runtime, /ignoreNextGreetingSpeechTranscript/);
