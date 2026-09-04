@@ -1,0 +1,32 @@
+{
+  "version": "2026-09-04",
+  "status": "validated_business_grid_for_controlled_voice_quotes",
+  "rules": {
+    "announce_only_if_configuration_is_certain": true,
+    "always_state_final_validation_by_pcfroid": true,
+    "if_uncertain_do_not_announce_price": true,
+    "prices_are_ttc": true,
+    "vat_rate_percent": 10,
+    "deep_cleaning_or_difficult_access_on_quote": true
+  },
+  "climatisation_maintenance": {
+    "multiple_monosplits_same_site": [
+      { "count": 1, "price_ttc_eur": 105 },
+      { "count": 2, "price_ttc_eur": 155 },
+      { "count": 3, "price_ttc_eur": 195 },
+      { "count": 4, "price_ttc_eur": 235 },
+      { "count": 5, "price_ttc_eur": 275 }
+    ],
+    "multisplit_single_outdoor_unit": [
+      { "indoor_units": 2, "label": "bi-split", "price_ttc_eur": 150 },
+      { "indoor_units": 3, "label": "tri-split", "price_ttc_eur": 180 },
+      { "indoor_units": 4, "label": "quadri-split", "price_ttc_eur": 210 },
+      { "indoor_units": 5, "label": "penta-split", "price_ttc_eur": 240 }
+    ],
+    "conditions": [
+      "Équipements accessibles et entretenus régulièrement.",
+      "Nettoyage approfondi, démontage important, nacelle ou accès difficile : devis ou validation spécifique par PC Froid.",
+      "Le tarif annoncé par Tom reste soumis à validation finale par PC Froid."
+    ]
+  }
+}

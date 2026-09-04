@@ -1,0 +1,126 @@
+{
+  "version": "2026-08-31",
+  "status": "work_branch_ready_for_voice_test",
+  "rules": {
+    "only_answer_from_active_entries": true,
+    "never_invent_missing_information": true,
+    "prefer_devis_when_price_depends_on_configuration": true,
+    "never_claim_unverified_photo_or_video": true
+  },
+  "entries": [
+    {
+      "key": "company_scope",
+      "active": true,
+      "answer": "PC Froid intervient en climatisation, pompe à chaleur et froid commercial pour les particuliers et les professionnels.",
+      "source": "https://www.pcfroid.fr/"
+    },
+    {
+      "key": "service_area_general",
+      "active": true,
+      "answer": "PC Froid est basé à Monteux et intervient principalement dans le Vaucluse et en proximité.",
+      "source": "https://www.pcfroid.fr/demande-d-intervention"
+    },
+    {
+      "key": "rge",
+      "active": true,
+      "answer": "PC Froid est qualifiée RGE QualiPAC.",
+      "source": "https://www.pcfroid.fr/"
+    },
+    {
+      "key": "devis",
+      "active": true,
+      "answer": "Les études et devis sont proposés gratuitement pour les projets indiqués sur le site.",
+      "source": "https://www.pcfroid.fr/climatisation"
+    },
+    {
+      "key": "climatisation_equipment_types",
+      "active": true,
+      "answer": "PC Froid installe notamment du monosplit, multisplit, gainable, des cassettes, plafonniers, consoles, rideaux d’air et systèmes DRV.",
+      "source": "https://www.pcfroid.fr/climatisation"
+    },
+    {
+      "key": "climatisation_maintenance_public_scope",
+      "active": true,
+      "answer": "Le site PC Froid présente l’entretien de climatisation comme un nettoyage et une désinfection accompagnés d’un contrôle de bon fonctionnement. Il précise un nettoyage en profondeur de l’évaporateur et de la turbine pour retirer les saletés qui réduisent le flux d’air et les performances, ainsi qu’une intervention sur le groupe extérieur.",
+      "source": "https://www.pcfroid.fr/climatisation"
+    },
+    {
+      "key": "climatisation_maintenance_internal_method",
+      "active": true,
+      "answer": "Pour expliquer concrètement un entretien PC Froid, Tom peut dire que le technicien protège la zone avec une bâche, démonte les habillages nécessaires, nettoie les filtres, l’échangeur et la turbine avec du matériel adapté, désinfecte l’unité, vérifie l’écoulement des condensats lorsque c’est pertinent, remonte et nettoie les habillages, puis contrôle le groupe extérieur et le bon fonctionnement de la climatisation. Selon la machine et l’intervention, le contrôle peut inclure les températures de fonctionnement.",
+      "source": "procedure_interne_validee_2026-08-31"
+    },
+    {
+      "key": "climatisation_maintenance_duration",
+      "active": true,
+      "answer": "Le site PC Froid indique qu’un entretien de climatisation prend généralement environ 30 à 45 minutes par climatiseur.",
+      "source": "https://www.pcfroid.fr/climatisation"
+    },
+    {
+      "key": "climatisation_maintenance_visual",
+      "active": true,
+      "answer": "Si un client veut voir concrètement la méthode, Tom peut l’orienter vers la page Climatisation du site PC Froid : une photo y illustre le nettoyage en profondeur de l’évaporateur et de la turbine. Tom ne doit pas annoncer qu’une vidéo existe tant qu’une vidéo n’est pas explicitement validée dans la base de connaissances.",
+      "source": "https://www.pcfroid.fr/climatisation"
+    },
+    {
+      "key": "maintenance_when_airflow_or_performance_drops",
+      "active": true,
+      "answer": "Si une climatisation souffle moins bien, refroidit moins bien ou semble avoir perdu en performance et que l’entretien n’a pas été réalisé depuis longtemps, un entretien complet est une bonne première étape. Il permet de nettoyer la machine et de contrôler son fonctionnement dans de bonnes conditions. Tom ne doit jamais garantir que l’entretien supprimera une panne : si le problème persiste ou si le symptôme est important, un diagnostic technique peut être nécessaire.",
+      "source": "procedure_interne_validee_2026-08-31"
+    },
+    {
+      "key": "maintenance_vs_breakdown",
+      "active": true,
+      "answer": "Si le client signale qu’il n’y a plus de froid du tout, un code défaut, une fuite, un bruit anormal ou un dysfonctionnement marqué, Tom doit préciser qu’un problème technique peut aussi être en cause. L’entretien peut être pertinent s’il est en retard, mais il ne remplace pas un diagnostic de panne lorsque le symptôme le justifie.",
+      "source": "procedure_interne_validee_2026-08-31"
+    },
+    {
+      "key": "climatisation_troubleshooting",
+      "active": true,
+      "answer": "PC Froid réalise notamment le diagnostic de panne de climatisation et peut intervenir sur le circuit frigorifique, rechercher une fuite, intervenir sur le fluide si nécessaire et remplacer des pièces défectueuses selon le diagnostic.",
+      "source": "https://www.pcfroid.fr/climatisation"
+    },
+    {
+      "key": "all_brands_clim_repair",
+      "active": true,
+      "answer": "Le site indique un dépannage de climatisation toutes marques.",
+      "source": "https://www.pcfroid.fr/climatisation"
+    },
+    {
+      "key": "pac_services",
+      "active": true,
+      "answer": "PC Froid réalise l’installation, le remplacement de chaudière, l’entretien et le dépannage de pompes à chaleur air/eau.",
+      "source": "https://www.pcfroid.fr/pompe-a-chaleur"
+    },
+    {
+      "key": "pac_aid_support",
+      "active": true,
+      "answer": "PC Froid indique accompagner les projets pour les aides financières telles que CEE et MaPrimeRénov’, selon l’éligibilité.",
+      "source": "https://www.pcfroid.fr/pompe-a-chaleur"
+    },
+    {
+      "key": "thermodynamic_water_heater",
+      "active": true,
+      "answer": "PC Froid propose installation, dépannage et maintenance de chauffe-eau thermodynamiques. Le site cite notamment Thermor, Atlantic et Heiwa, en monobloc ou bibloc selon le projet.",
+      "source": "https://www.pcfroid.fr/chauffe-eau-thermodynamique"
+    },
+    {
+      "key": "commercial_refrigeration",
+      "active": true,
+      "answer": "PC Froid réalise installation, maintenance et dépannage de froid commercial, notamment chambres froides et groupes frigorifiques.",
+      "source": "https://www.pcfroid.fr/froid-commercial"
+    },
+    {
+      "key": "professional_cold_priority_hint",
+      "active": true,
+      "answer": "Une panne de chambre froide, vitrine réfrigérée, armoire frigorifique ou équipement professionnel doit être identifiée rapidement car elle peut présenter un caractère prioritaire.",
+      "source": "https://www.pcfroid.fr/demande-d-intervention"
+    },
+    {
+      "key": "useful_intervention_information",
+      "active": true,
+      "answer": "Pour préparer une intervention, les informations utiles sont la commune, le type d’équipement, la marque et le modèle si connus, le problème, depuis quand il est apparu et éventuellement une photo.",
+      "source": "https://www.pcfroid.fr/demande-d-intervention"
+    }
+  ]
+}
