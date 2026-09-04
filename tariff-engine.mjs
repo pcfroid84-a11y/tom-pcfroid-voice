@@ -19,9 +19,7 @@ const COUNT_WORDS = new Map([
 export function isClimMaintenanceTariffRequest(text = "") {
   const value = normalize(text);
   if (!value) return false;
-  const asksPrice = /\b(tarif|prix|cout|coute|combien)\b/.test(value);
-  const maintenanceContext = /\b(entretien|maintenance|nettoyage|desinfection|clim|climatisation)\b/.test(value);
-  return asksPrice && maintenanceContext;
+  return /\b(tarif|prix|cout|coute|combien)\b/.test(value);
 }
 
 export function extractIndoorUnitCount(text = "") {
