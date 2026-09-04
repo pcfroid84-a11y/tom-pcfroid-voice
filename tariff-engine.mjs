@@ -47,9 +47,10 @@ export function inferClimMaintenanceConfig(text = "") {
   if (!value) return null;
 
   const count = extractIndoorUnitCount(value);
+  const hasEquipmentCountContext = /\b(split|splits|unite|unites|clim|clims|climatisation|climatisations)\b/.test(value);
   const explicitMulti = /\b(multi split|multisplit|bi split|tri split|quadri split|penta split)\b/.test(value) ||
     /\b(un seul|meme|le meme) groupe exterieur\b/.test(value);
-  const explicitMono = /\bmono split|monosplit|monosplits|plusieurs mono|groupes exterieurs|un groupe par unite\b/.test(value);
+  const explicitMono = /\b(mono split|monosplit|monosplits|plusieurs mono|groupes exterieurs|un groupe par unite|climatisations? independantes?|clims? independantes?)\b/.test(value);
 
   if (explicitMulti && count && count >= 2 && count <= 5) {
     return { type: "multi", count };
@@ -57,7 +58,7 @@ export function inferClimMaintenanceConfig(text = "") {
   if (explicitMono && count && count >= 1 && count <= 5) {
     return { type: "mono", count };
   }
-  if (count === 1) return { type: "mono", count: 1 };
+  if (count === 1 && hasEquipmentCountContext) return { type: "mono", count: 1 };
   return null;
 }
 
