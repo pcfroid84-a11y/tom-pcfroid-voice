@@ -26,13 +26,18 @@ test("le runtime final applique le moteur tarifaire contrôlé", async () => {
 }`;
 
   generatedLauncher = generatedLauncher.replace(strictReplaceOnce, auditReplaceOnce);
+
+  const launcherUrl = new URL(`../.clean-v1-pricing-audit-${process.pid}.mjs`, import.meta.url);
+  const runtimeUrl = new URL(`../.tom-server-pricing-runtime-${process.pid}.mjs`, import.meta.url);
+  generatedLauncher = generatedLauncher.replace(
+    'const runtimePath = new URL("./.tom-server-runtime.mjs", import.meta.url);',
+    `const runtimePath = new URL("./.tom-server-pricing-runtime-${process.pid}.mjs", import.meta.url);`,
+  );
   generatedLauncher = generatedLauncher.replace(
     'await import(runtimePath.href + `?v=${Date.now()}`);',
     'console.log(runtimePath.pathname);',
   );
 
-  const launcherUrl = new URL(`../.clean-v1-pricing-audit-${process.pid}.mjs`, import.meta.url);
-  const runtimeUrl = new URL("../.tom-server-runtime.mjs", import.meta.url);
   await writeFile(launcherUrl, generatedLauncher, "utf8");
 
   try {
