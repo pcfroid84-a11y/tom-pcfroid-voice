@@ -1,3 +1,8 @@
+import { readFile } from "node:fs/promises";
+
+const tariffUrl = new URL("./knowledge/tariffs-v1.json", import.meta.url);
+const tariffGrid = JSON.parse(await readFile(tariffUrl, "utf8"));
+
 function normalize(value = "") {
   return String(value || "")
     .normalize("NFD")
@@ -9,12 +14,23 @@ function normalize(value = "") {
     .trim();
 }
 
-const MONO_PRICES = new Map([[1,105],[2,155],[3,195],[4,235],[5,275]]);
-const MULTI_PRICES = new Map([[2,150],[3,180],[4,210],[5,240]]);
+const maintenanceGrid = tariffGrid?.climatisation_maintenance || {};
+const MONO_PRICES = new Map(
+  (maintenanceGrid.multiple_monosplits_same_site || []).map((row) => [Number(row.count), Number(row.price_ttc_eur)]),
+);
+const MULTI_PRICES = new Map(
+  (maintenanceGrid.multisplit_single_outdoor_unit || []).map((row) => [Number(row.indoor_units), Number(row.price_ttc_eur)]),
+);
 const COUNT_WORDS = new Map([
   ["un",1],["une",1],["deux",2],["trois",3],["quatre",4],["cinq",5],
   ["bi",2],["tri",3],["quadri",4],["penta",5],
 ]);
+
+export function isTariffGridVoiceValidated() {
+  return tariffGrid?.status === "validated_business_grid_for_controlled_voice_quotes" &&
+    tariffGrid?.rules?.always_state_final_validation_by_pcfroid === true &&
+    tariffGrid?.rules?.if_uncertain_do_not_announce_price === true;
+}
 
 export function isClimMaintenanceTariffRequest(text = "") {
   const value = normalize(text);
@@ -62,10 +78,11 @@ export function inferClimMaintenanceConfig(text = "") {
 }
 
 export function getClimMaintenanceQuote(config) {
+  if (!isTariffGridVoiceValidated()) return null;
   if (!config || !config.type || !config.count) return null;
   if (config.type === "mono") {
     const price = MONO_PRICES.get(Number(config.count));
-    if (!price) return null;
+    if (!Number.isFinite(price)) return null;
     return {
       type: "mono",
       count: Number(config.count),
@@ -75,7 +92,7 @@ export function getClimMaintenanceQuote(config) {
   }
   if (config.type === "multi") {
     const price = MULTI_PRICES.get(Number(config.count));
-    if (!price) return null;
+    if (!Number.isFinite(price)) return null;
     const labels = {2:"un bi-split",3:"un tri-split",4:"un quadri-split",5:"un penta-split"};
     return {
       type: "multi",
