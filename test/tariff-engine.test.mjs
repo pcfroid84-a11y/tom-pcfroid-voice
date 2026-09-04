@@ -31,10 +31,17 @@ test("grille multisplits validée", () => {
   assert.equal(getClimMaintenanceQuote({ type: "multi", count: 5 }).priceTtc, 240);
 });
 
-test("une configuration explicite peut être tarifée sans question supplémentaire", () => {
+test("une configuration réellement explicite peut être tarifée sans question supplémentaire", () => {
   assert.deepEqual(inferClimMaintenanceConfig("J'ai un tri-split"), { type: "multi", count: 3 });
   assert.deepEqual(inferClimMaintenanceConfig("J'ai trois monosplits"), { type: "mono", count: 3 });
-  assert.deepEqual(inferClimMaintenanceConfig("J'ai une climatisation"), { type: "mono", count: 1 });
+  assert.deepEqual(inferClimMaintenanceConfig("J'ai une unité intérieure"), { type: "mono", count: 1 });
+  assert.deepEqual(inferClimMaintenanceConfig("J'ai un monosplit"), { type: "mono", count: 1 });
+});
+
+test("une simple clim ne prouve jamais qu'il s'agit d'un monosplit", () => {
+  assert.equal(inferClimMaintenanceConfig("J'ai une clim à nettoyer"), null);
+  assert.equal(inferClimMaintenanceConfig("J'ai une climatisation"), null);
+  assert.equal(inferClimMaintenanceConfig("Je voudrais le tarif pour ma clim"), null);
 });
 
 test("un simple nombre ou une adresse ne devient jamais une configuration", () => {
