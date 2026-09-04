@@ -22,8 +22,7 @@ const MULTI_PRICES = new Map(
   (maintenanceGrid.multisplit_single_outdoor_unit || []).map((row) => [Number(row.indoor_units), Number(row.price_ttc_eur)]),
 );
 const COUNT_WORDS = new Map([
-  ["un",1],["une",1],["deux",2],["trois",3],["quatre",4],["cinq",5],
-  ["bi",2],["tri",3],["quadri",4],["penta",5],
+  ["deux",2],["trois",3],["quatre",4],["cinq",5],["un",1],["une",1],
 ]);
 
 export function isTariffGridVoiceValidated() {
@@ -43,6 +42,11 @@ export function extractIndoorUnitCount(text = "") {
   const value = normalize(text);
   if (!value) return null;
 
+  if (/\bbi split\b/.test(value)) return 2;
+  if (/\btri split\b/.test(value)) return 3;
+  if (/\bquadri split\b/.test(value)) return 4;
+  if (/\bpenta split\b/.test(value)) return 5;
+
   const direct = value.match(/\b([1-5])\b/);
   if (direct) return Number(direct[1]);
 
@@ -50,10 +54,6 @@ export function extractIndoorUnitCount(text = "") {
     if (new RegExp(`\\b${word}\\b`).test(value)) return count;
   }
 
-  if (/\bbi split\b/.test(value)) return 2;
-  if (/\btri split\b/.test(value)) return 3;
-  if (/\bquadri split\b/.test(value)) return 4;
-  if (/\bpenta split\b/.test(value)) return 5;
   return null;
 }
 
