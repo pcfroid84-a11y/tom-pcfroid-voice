@@ -63,12 +63,15 @@ test("le runtime final applique le moteur tarifaire contrôlé", async () => {
       "Tarif entretien clim annoncé avec validation PC Froid",
       "Tarif incertain laissé à la validation PC Froid",
       "tarif répondu après la question finale",
+      "Statut reconnu verrouillé : passage direct à l'étape suivante",
+      'requestConversationResponse("customer-status-confirmed")',
     ]) {
-      assert.ok(runtime.includes(marker), `marqueur tarifaire absent : ${marker}`);
+      assert.ok(runtime.includes(marker), `marqueur tarifaire ou parcours absent : ${marker}`);
     }
 
     assert.match(runtime, /state\.serviceIntent === "entretien"[\s\S]{0,180}state\.explicitEquipment === "climatisation"/);
     assert.match(runtime, /flowStageAtTurnStart[\s\S]{0,6000}isClimMaintenanceTariffRequest\(callerMessage\)/);
+    assert.match(runtime, /Statut reconnu verrouillé[\s\S]{0,220}requestConversationResponse\("customer-status-confirmed"\);[\s\S]{0,80}return;/);
 
     const syntax = spawnSync(process.execPath, ["--check", runtimeUrl.pathname], {
       encoding: "utf8",
