@@ -30,4 +30,12 @@ patches.push(
   ),
 );
 
+patches.push(
+  patch(
+    `    app.log.info(\n      { customerStatus },\n      "Statut client confirmé par l'appelant"\n    );\n  } else {`,
+    `    app.log.info(\n      { customerStatus },\n      "Statut client confirmé par l'appelant"\n    );\n\n    // Une réponse de statut déjà comprise est définitivement consommée par cette étape.\n    // Elle ne doit jamais tomber dans les filtres de petits fragments ni être relue comme une identité.\n    app.log.info({ customerStatus }, "Statut reconnu verrouillé : passage direct à l'étape suivante");\n    requestConversationResponse("customer-status-confirmed");\n    return;\n  } else {`,
+    "oui non de statut consommé avant tout filtre de fragment",
+  ),
+);
+
 export const CLEAN_V1_PRICING_PATCHES = CLEAN_V1_ROBUST_PATCHES + patches.join("\n\n") + "\n\n";
